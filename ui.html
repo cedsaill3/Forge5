@@ -1,0 +1,1763 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge5</title>
+<meta name="author" content="cedsaill">
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+  :root {
+    --bg: #07090f; --panel: #0b0e15; --panel2: #121722; --line: #1d2331;
+    --text: #d9e1ec; --dim: #7a8597; --accent: #00e5ff; --accent2: #00c2d8; --pink: #ff2bd6;
+    --sel: rgba(0,229,255,.14);
+    --ok: #3fdc7a; --warn: #ffb300; --err: #ff4d6a;
+    --mono: "Cascadia Code", Consolas, "SF Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #05070b; font-weight: 700;
+    box-shadow: 0 0 18px -6px var(--accent); }
+  button.primary:hover:not(:disabled) { background: var(--accent2); }
+  input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 8px; }
+  input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
+  kbd { font: 11px var(--mono); color: var(--dim); }
+
+  .app { display: grid; height: 100vh; grid-template-rows: 52px 1fr;
+    grid-template-columns: 240px 1fr; }
+  header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 14px;
+    background: linear-gradient(180deg, #0e121c, #090c13); border-bottom: 1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(0,229,255,.12), 0 8px 30px -20px var(--accent); position: relative; z-index: 2; }
+  .logo { font-weight: 900; letter-spacing: 2px; font-size: 17px; text-transform: uppercase; display: flex; align-items: baseline; gap: 2px; flex: none; }
+  .logo span { color: var(--accent); text-shadow: 0 0 12px rgba(0,229,255,.7); }
+  .logo small { margin-left: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .5px; text-transform: none; color: var(--dim); }
+  .spacer { flex: 1; }
+  header button, header .pill, .dbgstate { white-space: nowrap; flex: none; }
+  /* barre du haut compacte sur les ecrans moins larges */
+  @media (max-width: 1700px) { .logo small { display: none; } header { gap: 7px; } header button { padding: 6px 9px; }
+    header .pill { padding: 4px 8px; } }
+  @media (max-width: 1500px) { #ipPill { display: none; } header .seg button { padding: 6px 8px; } }
+  @media (max-width: 1400px) { header .pill.ps5only { font-size: 0; gap: 0; padding: 6px; } header .pill.ps5only .dot { margin: 0; } }
+  @media (max-width: 1100px) { #ipPill { display: none; } }
+  .pill { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim);
+    padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--err); }
+  .dot.on { background: var(--ok); }
+
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 10px; }
+  aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin: 6px 4px 8px; }
+  .proj { margin-bottom: 6px; }
+  .proj-name { padding: 6px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
+  .proj-name:hover { background: var(--panel2); }
+  .proj.active .proj-name { background: var(--panel2); color: #fff; }
+  .proj-name small { color: var(--ok); font-weight: 400; font-size: 11px; }
+  .file { padding: 3px 8px 3px 22px; cursor: pointer; color: var(--dim); border-radius: 4px; font-family: var(--mono); font-size: 12.5px; }
+  .file:hover { color: var(--text); }
+  .file.active { color: #fff; background: var(--sel); box-shadow: inset 2px 0 0 var(--accent); }
+  .empty { color: var(--dim); padding: 8px; font-size: 13px; }
+
+  main { display: grid; grid-template-rows: 1fr 6px var(--console-h, 260px); min-width: 0; min-height: 0; }
+  .editor-wrap { display: flex; flex-direction: column; min-height: 0; }
+  .tabbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--panel2);
+    border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--dim); min-height: 34px; }
+  .tabbar .modified { color: var(--warn); }
+  .editor { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+  .editor { position: relative; }
+  .gutter { padding: 10px 0; text-align: right; color: #4b5563; font: 13px/20px var(--mono);
+    user-select: none; min-width: 62px; overflow: hidden; background: var(--bg); }
+  .gutter div { height: 20px; padding: 0 8px 0 22px; position: relative; cursor: pointer; }
+  .gutter div:hover::before { content: ""; position: absolute; left: 6px; top: 5px; width: 10px; height: 10px;
+    border-radius: 50%; background: rgba(248,81,73,.35); }
+  .gutter div.bp::before { content: ""; position: absolute; left: 6px; top: 5px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--err); }
+  .gutter div.cur { color: #fff; }
+  .gutter div.cur::after { content: "➜"; position: absolute; left: 4px; top: 0; color: var(--warn); font-size: 13px; }
+  .gutter .bad { color: var(--err); font-weight: 700; }
+  .gutter .warnl { color: var(--warn); font-weight: 700; }
+  .curline { position: absolute; left: 62px; right: 0; height: 20px; pointer-events: none;
+    background: rgba(210,153,34,.16); border-left: 2px solid var(--warn); }
+  .curline.crash { background: rgba(248,81,73,.2); border-color: var(--err); }
+  /* Coloration syntaxique : le texte est dessine par <pre>, la zone de saisie est transparente au-dessus */
+  .code-area { flex: 1; position: relative; min-width: 0; }
+  .code-area textarea, .code-area pre { position: absolute; inset: 0; margin: 0; padding: 10px 10px 40px;
+    font: 13px/20px var(--mono); tab-size: 4; white-space: pre; border: 0; }
+  .code-area pre { overflow: hidden; pointer-events: none; color: var(--text); background: var(--bg); padding-right: 60px; }
+  .code-area textarea { background: transparent; color: transparent; caret-color: #fff; }
+  .code-area textarea::selection { background: rgba(0,229,255,.28); color: transparent; }
+  .readonly pre { opacity: .8; }
+  .hc { color: #6a7584; font-style: italic; } .hs { color: #a5d6a7; } .hp { color: #d2a8ff; }
+  .hn { color: #f0b072; } .hk { color: #ff7b72; } .hf { color: #79c0ff; } .ht { color: #7ee0d3; }
+  .saved { color: var(--ok); }
+
+  .file { display: flex; align-items: center; }
+  .file .del { margin-left: auto; opacity: 0; color: var(--dim); padding: 0 4px; }
+  .file:hover .del { opacity: 1; } .file .del:hover { color: var(--err); }
+  .addfile { padding: 3px 8px 3px 22px; cursor: pointer; color: var(--dim); font-size: 12px; }
+  .addfile:hover { color: var(--accent); }
+  button.auto.on { background: #1d3b2a; border-color: var(--ok); color: #9be9a8; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+  .seg button { border: 0; border-radius: 0; background: transparent; padding: 6px 10px; white-space: nowrap; color: var(--dim); }
+  .seg button.on { background: var(--accent); color: #05070b; font-weight: 700; }
+  .seg button.on.pc { background: var(--pink); color: #fff; }
+  .pill.sim { color: #ff9be8; border-color: var(--pink); }
+  body.pc .ps5only { display: none !important; }
+  body:not(.pc) .pconly { display: none !important; }
+  #btnSimStop { border-color: var(--err); color: var(--err); }
+
+  /* Notifications facon PS5 */
+  .toasts { position: fixed; top: 64px; right: 16px; display: flex; flex-direction: column; gap: 10px; z-index: 50; }
+  .toast { width: 340px; max-width: calc(100vw - 32px); display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(20,24,32,.96); border: 1px solid #2c3442; border-radius: 12px; padding: 12px 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5); animation: tin .25s ease-out; }
+  .toast.out { animation: tout .3s ease-in forwards; }
+  .toast .ic { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--pink)); display: grid; place-items: center; font-size: 18px; flex: none; }
+  .toast b { display: block; color: #fff; font-weight: 600; margin-bottom: 2px; word-break: break-word; }
+  .toast span { color: var(--dim); font-size: 12.5px; }
+  .toast small { display: block; color: #6b7686; font-size: 11px; margin-top: 4px; }
+  @keyframes tin { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes tout { to { transform: translateX(30px); opacity: 0; } }
+  /* Gestionnaire de payloads */
+  #btnPayloads { position: relative; }
+  #btnPayloads .badge { position: absolute; top: -6px; right: -6px; background: var(--warn); color: #000;
+    border-radius: 999px; font-size: 10.5px; padding: 0 5px; font-weight: 700; }
+  #dlgPayloads { width: min(720px, 94vw); }
+  .pl-intro { color: var(--dim); font-size: 13px; margin: -6px 0 12px; }
+  .pl-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; }
+  .pl-bar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .pl-bar .muted { color: var(--dim); }
+  .pl-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+  .pl { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); }
+  .pl.upd { border-color: var(--warn); }
+  .pl-name { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pl-name small { font-weight: 400; color: var(--dim); font-family: var(--mono); font-size: 11.5px; }
+  .pl-desc { color: var(--dim); font-size: 12.5px; grid-column: 1; }
+  .pl-ver { font-size: 12px; grid-column: 1; font-family: var(--mono); }
+  .pl-ver .new { color: var(--warn); } .pl-ver .ok { color: var(--ok); }
+  .pl-act { grid-column: 2; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 6px; align-items: stretch; justify-content: center; }
+  .pl-act button { font-size: 12.5px; padding: 5px 10px; white-space: nowrap; }
+  .pl a { color: var(--accent); font-size: 11.5px; }
+  @media (max-width: 560px) { .pl { grid-template-columns: 1fr; } .pl-act { grid-column: 1; grid-row: auto; flex-direction: row; } }
+  #sdkInfo { font-size: 12.5px; color: var(--dim); margin-top: 6px; }
+  #sdkInfo a { color: var(--accent); }
+
+  .dbgbar { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--warn); border-radius: 8px; }
+  .dbgbar button { padding: 4px 9px; border: 0; background: transparent; }
+  .dbgbar button:hover:not(:disabled) { background: var(--panel2); }
+  .dbgstate { font-size: 12px; color: var(--warn); align-self: center; padding: 0 6px; }
+  button.debug { border-color: var(--warn); }
+
+  #log-debug { padding: 0; }
+  #log-debug.active { display: grid; grid-template-columns: 1fr 360px; height: 100%; }
+  .dbg-log { overflow: auto; padding: 8px 12px; }
+  .dbg-side { border-left: 1px solid var(--line); overflow: auto; font-family: var(--mono); font-size: 12.5px; }
+  .dbg-side h4 { margin: 0; padding: 6px 10px; font: 600 11px "Segoe UI", sans-serif; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--dim); background: var(--panel2); position: sticky; top: 0; }
+  .var { padding: 2px 10px; display: flex; gap: 8px; }
+  .var .n { color: #79c0ff; flex: none; } .var .v { color: var(--text); word-break: break-all; }
+  .var .v.changed { color: var(--warn); }
+  .var .x { margin-left: auto; color: var(--dim); cursor: pointer; }
+  .frame { padding: 2px 10px; cursor: pointer; } .frame:hover { background: var(--panel2); }
+  .frame.sel { background: var(--sel); } .frame small { color: var(--dim); }
+  .watch-in { width: calc(100% - 20px); margin: 6px 10px; font: 12.5px var(--mono); padding: 4px 6px; }
+  textarea { flex: 1; resize: none; border: 0; background: var(--bg); color: var(--text);
+    font: 13px/20px var(--mono); padding: 10px; tab-size: 4; white-space: pre; overflow: auto; }
+  .placeholder { flex: 1; display: grid; place-items: center; color: var(--dim); text-align: center; padding: 20px; }
+  .placeholder > div > b { color: #fff; font-size: 20px; display: block; margin-bottom: 10px; letter-spacing: .3px; }
+  .placeholder span b { color: var(--accent); text-shadow: 0 0 10px rgba(0,229,255,.6); }
+  .placeholder { background: radial-gradient(600px 300px at 50% 45%, rgba(0,229,255,.06), transparent 70%); }
+
+  .splitter { background: var(--line); cursor: row-resize; }
+  .console { display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
+  .ctabs { display: flex; gap: 2px; padding: 0 8px; border-bottom: 1px solid var(--line); align-items: center; }
+  .ctab { padding: 8px 12px; cursor: pointer; color: var(--dim); border-bottom: 2px solid transparent; font-size: 13px; }
+  .ctab.active { color: #fff; border-color: var(--accent); box-shadow: 0 6px 12px -10px var(--accent); }
+  .ctab .badge { background: var(--err); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
+  .ctab .badge.w { background: var(--warn); }
+  .clog { flex: 1; overflow: auto; padding: 8px 12px; font: 12.5px/18px var(--mono); white-space: pre-wrap; word-break: break-word; display: none; }
+  .clog.active { display: block; }
+  .l-cmd { color: var(--accent); } .l-ok { color: var(--ok); } .l-error { color: var(--err); }
+  .l-warn, .l-warning { color: var(--warn); } .l-dim, .l-note { color: var(--dim); }
+  .l-link { cursor: pointer; text-decoration: underline dotted; }
+  .problem { padding: 4px 6px; border-radius: 4px; cursor: pointer; }
+  .problem:hover { background: var(--panel2); }
+
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 20px; width: min(520px, 92vw);
+    box-shadow: 0 30px 80px -30px #000, 0 0 0 1px rgba(0,229,255,.06); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h2 { margin: 0 0 14px; font-size: 18px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .field label { font-size: 12px; color: var(--dim); }
+  .field small { color: var(--dim); font-size: 11.5px; }
+  .row { display: flex; gap: 10px; } .row .field { flex: 1; }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    header { flex-wrap: wrap; padding: 8px 16px; height: auto; }
+    aside { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+  /* ---------- Launcher5 ---------- */
+  #dlgL5 { width: min(1280px, 97vw); height: min(860px, 94vh); padding: 0; display: none; }
+  #dlgL5[open] { display: flex; flex-direction: column; }
+  .l5-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .l5-head h2 { margin: 0 6px 0 0; font-size: 18px; }
+  .l5-head .muted { color: var(--dim); font-size: 12.5px; }
+  .l5-err { margin: 10px 16px 0; padding: 10px 12px; border: 1px solid var(--err); border-radius: 8px; color: #ffb4ae; background: rgba(248,81,73,.08); font-size: 13px; }
+  .l5-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px 16px; gap: 10px; }
+  .l5-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .l5-bar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .l5-hint { color: var(--dim); font-size: 12.5px; }
+  .l5-tree { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: var(--bg); }
+  .l5-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; cursor: grab; user-select: none; }
+  .l5-row:hover { background: var(--panel2); }
+  .l5-row.hid { opacity: .45; }
+  .l5-row.missing .l5-name { color: var(--err); }
+  .l5-row.drop-before { border-top: 2px solid var(--accent); }
+  .l5-row.drop-after { border-bottom: 2px solid var(--accent); }
+  .l5-row.drop-into { background: var(--sel); border-color: var(--accent); }
+  .l5-ic { width: 34px; height: 34px; border-radius: 6px; object-fit: cover; background: var(--panel2); flex: none; }
+  .l5-fold-ic { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; flex: none; font-size: 17px; }
+  .l5-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l5-sub { color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l5-kind { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); flex: none; }
+  .l5-row .grow { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+  .l5-row .tools { display: flex; gap: 4px; opacity: 0; flex: none; }
+  .l5-row:hover .tools { opacity: 1; }
+  .l5-row .tools button { padding: 2px 7px; font-size: 12px; }
+  .l5-row input[type=color] { width: 26px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .l5-twist { width: 18px; text-align: center; color: var(--dim); cursor: pointer; flex: none; }
+  .l5-kids { margin-left: 26px; border-left: 1px dashed var(--line); padding-left: 6px; }
+  .l5-rootdrop { margin-top: 6px; padding: 10px; text-align: center; color: var(--dim); border: 1px dashed var(--line); border-radius: 8px; font-size: 12.5px; }
+  .l5-rootdrop.drop-into { border-color: var(--accent); color: var(--text); }
+  .l5-dirty { color: var(--warn); }
+
+  /* studio de thème */
+  .l5-studio { --acc: #00e5ff; --acc2: #ff2bd6; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 430px; gap: 16px; }
+  .l5-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+  .l5-right { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: 14px;
+    background: linear-gradient(180deg, #0b0e15, #07090e); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 40px -18px var(--acc); }
+  .l5-form { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 14px; }
+  .l5-name-row { display: flex; flex-direction: column; gap: 6px; }
+  .l5-name-row input { font-size: 18px; font-weight: 700; letter-spacing: .3px; background: #05070b; border-color: #232b37; padding: 9px 12px; }
+  .l5-name-row input:focus { outline: 1px solid var(--acc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
+  .l5-right .lbl { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
+  .l5-grp { display: flex; flex-direction: column; gap: 10px; }
+  .l5-grp h4 { margin: 4px 0 0; font-size: 11.5px; letter-spacing: 2.5px; color: var(--acc); display: flex; align-items: center; gap: 10px; }
+  .l5-grp h4::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 45%, transparent), transparent); }
+  .l5-ctl { display: flex; flex-direction: column; gap: 6px; }
+  .l5-ctl select { width: 100%; }
+  .l5-sw { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .l5-sw button { width: 26px; height: 26px; padding: 0; border-radius: 7px; border: 1px solid rgba(255,255,255,.12); transition: transform .12s; }
+  .l5-sw button:hover { transform: scale(1.15); border-color: #fff; }
+  .l5-sw button.on { outline: 2px solid #fff; outline-offset: 2px; transform: scale(1.1); }
+  .l5-sw input[type=color] { width: 34px; height: 28px; padding: 0 2px; border-radius: 7px; cursor: pointer; background: #05070b; }
+  .l5-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .l5-chips button { border-radius: 999px; padding: 5px 13px; font-size: 12.5px; background: #05070b; border-color: #262e3a; color: #aab3c0; }
+  .l5-chips button:hover:not(:disabled) { border-color: var(--acc); color: #fff; }
+  .l5-chips button.on { background: var(--acc); border-color: var(--acc); color: #05070b; font-weight: 700; box-shadow: 0 0 16px -4px var(--acc); }
+  .l5-rng { display: flex; align-items: center; gap: 10px; }
+  .l5-rng input { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; padding: 0; border: 0;
+    background: linear-gradient(90deg, var(--acc) var(--p, 50%), #232b37 var(--p, 50%)); }
+  .l5-rng input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 12px var(--acc); cursor: pointer; }
+  .l5-rng b { width: 48px; text-align: right; font: 600 12.5px var(--mono); }
+  .l5-right .l5-actions { padding: 12px 16px 14px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .l5-right .l5-actions .l5-go { grid-column: 1 / -1; padding: 11px; font-size: 15px; letter-spacing: .5px; background: var(--acc); border-color: var(--acc); color: #05070b; box-shadow: 0 0 26px -6px var(--acc); }
+  .l5-right .l5-actions .l5-go:hover:not(:disabled) { filter: brightness(1.1); background: var(--acc); }
+  .l5-gal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11.5px; letter-spacing: 2.5px; color: var(--dim); text-transform: uppercase; }
+  .l5-gal-head .l5-hint { text-transform: none; letter-spacing: 0; }
+  .l5-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; overflow-y: auto; min-height: 0; padding: 4px 2px 6px; }
+  .l5-card-th { position: relative; height: 74px; border-radius: 10px; padding: 0; border: 1px solid rgba(255,255,255,.1); overflow: hidden; text-align: left; transition: transform .12s, box-shadow .12s; }
+  .l5-card-th:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--a); box-shadow: 0 6px 20px -8px var(--a); }
+  .l5-card-th.on { border: 2px solid var(--a); box-shadow: 0 0 22px -4px var(--a); }
+  .l5-card-th i { position: absolute; display: block; border-radius: 4px; }
+  .l5-card-th .dot { right: 9px; top: 9px; width: 13px; height: 13px; border-radius: 50%; background: var(--a); box-shadow: 0 0 10px var(--a); }
+  .l5-card-th .bar { left: 9px; bottom: 26px; width: 46%; height: 5px; background: var(--a); }
+  .l5-card-th .bar2 { left: calc(46% + 15px); bottom: 26px; width: 18%; height: 5px; background: var(--b); }
+  .l5-card-th .nm { position: absolute; left: 9px; right: 9px; bottom: 6px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px #000; }
+  .l5-card-th .mine { position: absolute; left: 8px; top: 5px; font-size: 12px; color: var(--b); }
+  .l5-prev { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); background: #000; flex: none; max-height: 62%; align-self: center;
+    box-shadow: 0 20px 50px -20px #000, 0 0 0 1px rgba(255,255,255,.03); }
+  .l5-prev .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
+    font-family: "DejaVu Sans", "Segoe UI", sans-serif; color: #fff; }
+  .stage > * { position: absolute; }
+  .stage .lay { inset: 0; }
+  .stage .wall { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage .art { inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); object-fit: cover; filter: blur(40px); }
+  .stage .glow { border-radius: 50%; }
+  .stage .logo5 { left: 110px; top: 40px; font-weight: 700; font-size: 36px; line-height: 1; letter-spacing: 1px; }
+  .stage .tabs { left: 470px; top: 50px; display: flex; gap: 46px; font-size: 26px; line-height: 1; color: #9aa4b5; }
+  .stage .tabs .on { color: #fff; position: relative; }
+  .stage .tabs .on::after { content: ""; position: absolute; left: 0; right: 0; top: 40px; height: 5px; border-radius: 3px; background: var(--acc); }
+  .stage .clock { right: 110px; top: 38px; text-align: right; font-weight: 700; font-size: 36px; line-height: 1.2; }
+  .stage .clock small { display: block; font-size: 22px; line-height: 1.4; color: #9aa4b5; }
+  .stage .kind { left: 110px; top: 210px; padding: 6px 15px; border-radius: 19px; font-size: 22px; line-height: 1.2; color: #0a0a12; background: var(--acc); }
+  .stage .title { left: 106px; top: 255px; font-weight: 700; font-size: 88px; line-height: 1.1; max-width: 1500px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stage .meta { left: 110px; top: 380px; font-weight: 700; font-size: 30px; line-height: 1.2; color: #c9d1dc; }
+  .stage .btns { left: 110px; top: 450px; display: flex; gap: 24px; }
+  .stage .btns span { padding: 13px 28px; border-radius: 40px; font-weight: 700; font-size: 30px; line-height: 1.2; }
+  .stage .btns .play { background: var(--acc); color: #0a0a12; }
+  .stage .btns .opt { border: 2px solid rgba(255,255,255,.8); }
+  .stage .tile { background: #223; overflow: hidden; }
+  .stage .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .stage .tile.sel { outline: 4px solid #fff; }
+  .stage .foot { left: 110px; top: 1024px; font-size: 22px; line-height: 1; color: #9aa4b5; }
+  .stage .gname { width: 210px; text-align: center; font-size: 22px; color: #9aa4b5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stage .gname.on { color: #fff; font-size: 26px; }
+  .l5-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .l5-media { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; }
+  .l5-card { border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); display: flex; flex-direction: column; min-height: 0; }
+  .l5-card h3 { margin: 0; padding: 10px 12px; font-size: 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .l5-card h3 small { color: var(--dim); font-weight: 400; }
+  .l5-card .body { flex: 1; overflow: auto; padding: 10px; }
+  .l5-card .foot { padding: 10px; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+  .l5-card.drag { border-color: var(--accent); background: #18263a; }
+  .l5-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .l5-thumb { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--bg); }
+  .l5-thumb img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+  .l5-thumb div { padding: 4px 8px; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l5-thumb button, .l5-item button { padding: 1px 7px; font-size: 12px; }
+  .l5-thumb .x { position: absolute; top: 5px; right: 5px; }
+  .l5-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; }
+  .l5-item:hover { background: var(--bg); }
+  .l5-item .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l5-item small { color: var(--dim); }
+  @media (max-width: 900px) { .l5-studio, .l5-media { grid-template-columns: 1fr; } .l5-pane { overflow: auto; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" title="Forge5 v1.0.0 · cedsaill">Forge<span>5</span><small>by cedsaill</small></div>
+    <div class="seg" id="targetSeg" data-i18n-title="target.title">
+      <button data-t="ps5">🎮 PS5</button>
+      <button data-t="pc" class="pc" data-i18n="target.pc"></button>
+    </div>
+    <div class="pill ps5only" title="ps5-payload-elfldr (port 9021)"><span class="dot" id="dotElf"></span>ELF loader</div>
+    <div class="pill ps5only" title="klogsrv (port 3232)"><span class="dot" id="dotKlog"></span>Klog</div>
+    <div class="pill ps5only" id="ipPill">—</div>
+    <div class="pill sim pconly" data-i18n-title="pill.sim.title" data-i18n="pill.sim"></div>
+    <div class="spacer"></div>
+    <div class="dbgbar" id="dbgbar" hidden>
+      <span class="dbgstate" id="dbgState">…</span>
+      <button id="dbContinue" data-i18n-title="dbg.continue">▶</button>
+      <button id="dbPause" data-i18n-title="dbg.pause">⏸</button>
+      <button id="dbNext" data-i18n-title="dbg.next">⤼</button>
+      <button id="dbStep" data-i18n-title="dbg.step">⤓</button>
+      <button id="dbFinish" data-i18n-title="dbg.finish">⤒</button>
+      <button id="dbStop" data-i18n-title="dbg.stop" style="color:var(--err)">■</button>
+    </div>
+    <button id="btnDebug" class="debug" data-i18n-title="btn.debug.title" data-i18n="btn.debug"></button>
+    <button id="btnAuto" class="auto" data-i18n-title="btn.auto.title"></button>
+    <button id="btnBuild" title="F7" data-i18n="btn.build"></button>
+    <button id="btnDeploy" class="ps5only" title="F6" data-i18n="btn.deploy"></button>
+    <button id="btnSimStop" hidden data-i18n-title="btn.simstop.title" data-i18n="btn.simstop"></button>
+    <button id="btnRun" class="primary" title="F5"></button>
+    <button id="btnL5" data-i18n-title="l5.btn.title">🚀 Launcher5</button>
+    <button id="btnPayloads"><span data-i18n="pl.btn"></span><span class="badge" id="plBadge" hidden></span></button>
+    <select id="langSel" data-i18n-title="lang.title"></select>
+    <button id="btnSettings" data-i18n-title="btn.settings">⚙</button>
+  </header>
+
+  <aside>
+    <h3 data-i18n="side.projects"></h3>
+    <div id="projects"></div>
+    <button id="btnNew" style="width:100%;margin-top:8px" data-i18n="btn.new"></button>
+  </aside>
+
+  <main>
+    <div class="editor-wrap">
+      <div class="tabbar"><span id="curFile"></span><span id="modified" class="modified"></span>
+        <span class="spacer"></span><kbd data-i18n="editor.hint"></kbd></div>
+      <div class="editor" id="editor" hidden>
+        <div class="gutter" id="gutter" data-i18n-title="gutter.title"></div>
+        <div class="code-area" id="codeArea"><pre id="hl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" autocomplete="off"></textarea></div>
+        <div class="curline" id="curline" hidden></div>
+      </div>
+      <div class="placeholder" id="placeholder">
+        <div><b data-i18n="welcome.title"></b>
+          <span data-i18n-html="welcome.body"></span></div>
+      </div>
+    </div>
+    <div class="splitter" id="splitter"></div>
+    <div class="console">
+      <div class="ctabs">
+        <div class="ctab active" data-tab="build" data-i18n="tab.build"></div>
+        <div class="ctab" data-tab="problems"><span data-i18n="tab.problems"></span> <span id="probBadge"></span></div>
+        <div class="ctab" data-tab="ps5" data-i18n="tab.ps5"></div>
+        <div class="ctab" data-tab="klog" data-i18n="tab.klog"></div>
+        <div class="ctab" data-tab="debug" data-i18n="tab.debug"></div>
+        <span class="spacer"></span>
+        <button id="btnKlog" style="padding:3px 10px;font-size:12px"></button>
+        <button id="btnClear" style="padding:3px 10px;font-size:12px;margin-left:6px" data-i18n="btn.clear"></button>
+      </div>
+      <div class="clog active" id="log-build"></div>
+      <div class="clog" id="log-problems"><div class="empty" data-i18n="problems.none"></div></div>
+      <div class="clog" id="log-ps5"></div>
+      <div class="clog" id="log-klog"></div>
+      <div class="clog" id="log-debug">
+        <div class="dbg-log" id="dbgLog"><div class="empty" data-i18n-html="dbg.empty"></div></div>
+        <div class="dbg-side">
+          <h4 data-i18n="dbg.vars"></h4><div id="dbgVars"><div class="empty">—</div></div>
+          <h4 data-i18n="dbg.watch"></h4><div id="dbgWatch"></div>
+          <input class="watch-in" id="watchIn" data-i18n-ph="dbg.watch.ph">
+          <h4 data-i18n="dbg.stack"></h4><div id="dbgStack"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<dialog id="dlgSettings">
+  <h2 data-i18n="set.title"></h2>
+  <div class="row">
+    <div class="field"><label data-i18n="set.ip"></label>
+      <div style="display:flex;gap:6px"><input id="cfgIp" placeholder="192.168.1.50" style="flex:1"><button type="button" id="btnDetect" data-i18n="set.detect"></button></div>
+      <small id="detectInfo"></small></div>
+  </div>
+  <div class="row">
+    <div class="field"><label data-i18n="set.elfport"></label><input id="cfgElf" type="number"></div>
+    <div class="field"><label data-i18n="set.klogport"></label><input id="cfgKlog" type="number"></div>
+  </div>
+  <div class="field"><label data-i18n="set.sdk"></label><input id="cfgSdk" placeholder="C:\ps5-payload-sdk">
+    <small data-i18n="set.sdk.help"></small></div>
+  <div class="field"><label data-i18n="set.cmd"></label><input id="cfgCmd" placeholder="make"></div>
+  <div class="row">
+    <div class="field" style="flex:3"><label data-i18n="set.gdb"></label><input id="cfgGdb" placeholder="gdb-multiarch">
+      <small data-i18n="set.gdb.help"></small></div>
+    <div class="field"><label data-i18n="set.gdbport"></label><input id="cfgGdbPort" type="number"></div>
+  </div>
+  <div class="field"><label data-i18n="set.gdbdir"></label><input id="cfgGdbDir" placeholder="/user/temp"></div>
+  <div class="field"><label data-i18n="set.ws"></label><input id="cfgWs" placeholder="projets"></div>
+  <div class="field"><button id="btnSdk" type="button" data-i18n="set.sdkcheck"></button><div id="sdkInfo"></div></div>
+  <div class="actions"><button id="cfgCancel" data-i18n="btn.cancel"></button><button class="primary" id="cfgSave" data-i18n="btn.save"></button></div>
+</dialog>
+
+<dialog id="dlgPayloads">
+  <h2 data-i18n="pl.title"></h2>
+  <p class="pl-intro" data-i18n="pl.intro"></p>
+  <div class="pl-bar">
+    <button id="plCheck" data-i18n="pl.check"></button>
+    <label><input type="checkbox" id="plAuto"> <span data-i18n="pl.auto"></span></label>
+    <span class="muted" id="plLast"></span>
+  </div>
+  <div class="pl-list" id="plList"></div>
+  <div class="actions"><button id="plClose" data-i18n="pl.close"></button></div>
+</dialog>
+
+<dialog id="dlgNew">
+  <h2 data-i18n="new.title"></h2>
+  <div class="field"><label data-i18n="new.name"></label><input id="newName" placeholder="mon_homebrew"><small data-i18n="new.name.help"></small></div>
+  <div class="field"><label data-i18n="new.tpl"></label><select id="newTpl"></select></div>
+  <div class="actions"><button id="newCancel" data-i18n="btn.cancel"></button><button class="primary" id="newOk" data-i18n="btn.create"></button></div>
+</dialog>
+
+<dialog id="dlgL5">
+  <div class="l5-head">
+    <h2>Launcher<span style="color:var(--accent)">5</span></h2>
+    <div class="seg" id="l5Tabs">
+      <button data-l5tab="menu" class="on" data-i18n="l5.tab.menu"></button>
+      <button data-l5tab="theme" data-i18n="l5.tab.theme"></button>
+      <button data-l5tab="media" data-i18n="l5.tab.media"></button>
+    </div>
+    <span class="spacer"></span>
+    <span class="muted" id="l5Status"></span>
+    <button id="l5Reload" data-i18n="l5.reload"></button>
+    <button id="l5Install" data-i18n="l5.install" data-i18n-title="l5.install.title"></button>
+    <button id="l5Close" data-i18n="pl.close"></button>
+  </div>
+  <div class="l5-err" id="l5Err" hidden></div>
+
+  <section class="l5-pane" id="l5-menu">
+    <div class="l5-bar">
+      <button id="l5NewFolder" data-i18n="l5.newfolder"></button>
+      <input id="l5Search" data-i18n-ph="l5.search" style="width:220px">
+      <button id="l5Expand" data-i18n="l5.expand"></button>
+      <button id="l5Collapse" data-i18n="l5.collapse"></button>
+      <label><input type="checkbox" id="l5ShowFolders"> <span data-i18n="l5.showfolders"></span></label>
+      <label><span data-i18n="l5.view"></span> <select id="l5View">
+        <option value="flow" data-i18n="l5.view.flow"></option><option value="grid" data-i18n="l5.view.grid"></option><option value="classic" data-i18n="l5.view.classic"></option>
+      </select></label>
+      <span class="spacer"></span>
+      <span class="l5-hint" id="l5Count"></span>
+      <button class="primary" id="l5SaveMenu" data-i18n="l5.savemenu"></button>
+    </div>
+    <div class="l5-hint" data-i18n="l5.menu.hint"></div>
+    <div class="l5-tree" id="l5Tree"></div>
+  </section>
+
+  <section class="l5-pane" id="l5-theme" hidden>
+    <div class="l5-studio" id="l5Studio">
+      <div class="l5-left">
+        <div class="l5-prev" id="l5Prev"><div class="stage" id="l5Stage"></div></div>
+        <div class="l5-gal-head"><span data-i18n="l5.gallery"></span><span class="l5-hint" data-i18n="l5.live"></span></div>
+        <div class="l5-gallery" id="l5Gallery"></div>
+      </div>
+      <div class="l5-right">
+        <div class="l5-form" id="l5Form"></div>
+        <div class="l5-actions">
+          <button class="l5-go" id="l5Apply" data-i18n="l5.apply"></button>
+          <button id="l5SaveTheme" data-i18n="l5.savetheme"></button>
+          <button id="l5Export" data-i18n="l5.export"></button>
+          <button id="l5Import" data-i18n="l5.import" style="grid-column: 1 / -1"></button>
+          <input type="file" id="l5ImportFile" accept=".json,application/json" hidden>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="l5-pane" id="l5-media" hidden>
+    <div class="l5-hint" data-i18n="l5.media.hint"></div>
+    <div class="l5-media">
+      <div class="l5-card" data-drop="fonds">
+        <h3><span data-i18n="l5.walls"></span> <small>fonds/</small></h3>
+        <div class="body"><div class="l5-thumbs" id="l5Walls"></div></div>
+        <div class="foot"><button id="l5AddWall" data-i18n="l5.addwall"></button><span class="l5-hint" data-i18n="l5.wall.help"></span>
+          <input type="file" id="l5WallFile" accept="image/*" multiple hidden></div>
+      </div>
+      <div class="l5-card" data-drop="musique">
+        <h3><span data-i18n="l5.musics"></span> <small>musique/</small></h3>
+        <div class="body" id="l5Musics"></div>
+        <div class="foot"><button id="l5AddMusic" data-i18n="l5.addmusic"></button><span class="l5-hint">ogg, mp3, flac, wav, mod</span>
+          <input type="file" id="l5MusicFile" accept=".ogg,.mp3,.flac,.wav,.mod,.xm,.it,.s3m" multiple hidden></div>
+        <audio id="l5Audio" hidden></audio>
+      </div>
+      <div class="l5-card" data-drop="themes">
+        <h3><span data-i18n="l5.mythemes"></span> <small>themes/</small></h3>
+        <div class="body" id="l5Themes"></div>
+        <div class="foot"><button id="l5AddTheme" data-i18n="l5.import"></button>
+          <input type="file" id="l5ThemeFile" accept=".json,application/json" multiple hidden></div>
+      </div>
+    </div>
+  </section>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Traduction ---------- */
+let I18N = {}, LANG = "fr", LANGS = [];
+function t(key, vars) {
+  let s = I18N[key] ?? key;
+  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  return s;
+}
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach(e => { e.textContent = t(e.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach(e => { e.innerHTML = t(e.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-title]").forEach(e => { e.title = t(e.dataset.i18nTitle); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(e => { e.placeholder = t(e.dataset.i18nPh); });
+  document.documentElement.lang = LANG;
+}
+async function loadI18n(lang) {
+  const r = await api("/api/i18n" + (lang ? "?lang=" + encodeURIComponent(lang) : ""));
+  I18N = r.ui; LANG = r.lang; LANGS = r.languages;
+  const sel = $("langSel");
+  sel.innerHTML = LANGS.map(l => `<option value="${l.code}">🌐 ${l.name}</option>`).join("");
+  sel.value = LANG;
+  applyI18n();
+  // textes qui dépendent de l'état
+  $("btnKlog").textContent = t(state.klog ? "klog.stop" : "klog.start");
+  if (!state.file) $("curFile").textContent = t("editor.nofile");
+}
+async function initLang() {
+  let lang = state.cfg.lang;
+  if (!lang) {  // première ouverture : langue du navigateur
+    const r = await api("/api/i18n");
+    const nav = (navigator.language || "fr").slice(0, 2).toLowerCase();
+    lang = r.languages.some(l => l.code === nav) ? nav : "en";
+    state.cfg = await api("/api/config", { lang });
+  }
+  await loadI18n(lang);
+}
+const api = async (path, body) => {
+  const r = await fetch(path, body === undefined ? {} :
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+};
+
+const state = { projects: [], templates: [], project: null, file: null, dirty: false, busy: false, diags: [], klog: false, cfg: {},
+  bps: {}, dbg: { state: "idle" }, watches: [], prevVars: {} };
+
+/* ---------- Projets ---------- */
+async function loadProjects() {
+  const j = await api("/api/projects");
+  state.projects = j.projects; state.templates = j.templates;
+  const box = $("projects"); box.innerHTML = "";
+  if (!j.projects.length) box.innerHTML = `<div class="empty">${esc(t("projects.none"))}</div>`;
+  for (const p of j.projects) {
+    const d = document.createElement("div");
+    d.className = "proj" + (p.name === state.project ? " active" : "");
+    const n = document.createElement("div"); n.className = "proj-name";
+    n.textContent = p.name;
+    if (p.elf) { const s = document.createElement("small"); s.textContent = "● elf"; s.title = p.elf; n.append(s); }
+    n.onclick = () => { selectProject(p.name); };
+    d.append(n);
+    if (p.name === state.project) {
+      for (const f of p.files) {
+        const fe = document.createElement("div");
+        fe.className = "file" + (f === state.file ? " active" : "");
+        const label = document.createElement("span"); label.textContent = f;
+        const del = document.createElement("span"); del.className = "del"; del.textContent = "✕"; del.title = t("file.delete");
+        del.onclick = async (e) => {
+          e.stopPropagation();
+          if (!confirm(t("file.delete.confirm", { f }))) return;
+          await api("/api/deletefile", { project: p.name, file: f });
+        };
+        fe.append(label, del);
+        fe.onclick = () => openFile(p.name, f);
+        d.append(fe);
+      }
+      const add = document.createElement("div"); add.className = "addfile"; add.textContent = t("file.add");
+      add.onclick = async () => {
+        const name = prompt(t("file.add.prompt"));
+        if (!name) return;
+        try { const r = await api("/api/newfile", { project: p.name, file: name }); await openFile(p.name, r.file); }
+        catch (e) { alert(e.message); }
+      };
+      d.append(add);
+    }
+    box.append(d);
+  }
+  updateButtons();
+}
+async function selectProject(name) {
+  if (!(await confirmDiscard())) return;
+  state.project = name; state.file = null;
+  await loadProjects();
+  const p = state.projects.find(x => x.name === name);
+  const main = p.files.find(f => /main\.(c|cpp)$/.test(f)) || p.files[0];
+  if (main) openFile(name, main);
+}
+async function confirmDiscard() {
+  if (!state.dirty) return true;
+  return confirm(t("discard.confirm"));
+}
+
+/* ---------- Éditeur ---------- */
+const code = $("code"), gutter = $("gutter");
+async function openFile(project, file, line) {
+  if ((project !== state.project || file !== state.file) && !(await confirmDiscard())) return;
+  const j = await api(`/api/file/${encodeURIComponent(project)}/${file.split("/").map(encodeURIComponent).join("/")}`);
+  state.project = project; state.file = file; state.dirty = false;
+  code.value = j.content; highlight();
+  $("editor").hidden = false; $("placeholder").hidden = true;
+  $("curFile").textContent = `${project} / ${file}`; $("modified").textContent = "";
+  setReadOnly(state.dbg.state !== "idle");
+  await loadBreakpoints(); loadProjects();
+  if (line) gotoLine(line);
+}
+function renderGutter() {
+  const n = code.value.split("\n").length;
+  const marks = {};
+  for (const d of state.diags) if (d.project === state.project && d.file.endsWith(state.file))
+    marks[d.line] = d.severity === "error" ? "bad" : (marks[d.line] || "warnl");
+  const bps = new Set(state.bps[state.file] || []);
+  const cur = curLineHere();
+  let html = "";
+  for (let i = 1; i <= n; i++) {
+    const cls = [bps.has(i) ? "bp" : "", cur === i ? "cur" : ""].join(" ").trim();
+    const num = marks[i] ? `<span class="${marks[i]}">${i}</span>` : i;
+    html += `<div data-line="${i}"${cls ? ` class="${cls}"` : ""}>${num}</div>`;
+  }
+  html += "<div></div>".repeat(3);
+  gutter.innerHTML = html;
+  gutter.scrollTop = code.scrollTop;
+  positionCurLine();
+}
+function curLineHere() {
+  const d = state.dbg;
+  return d.state === "stopped" && d.project === state.project && d.file === state.file ? d.line : null;
+}
+function positionCurLine() {
+  const el = $("curline"), line = curLineHere();
+  el.hidden = !line;
+  if (!line) return;
+  el.style.top = (10 + (line - 1) * 20 - code.scrollTop) + "px";
+  el.classList.toggle("crash", !!state.dbg.crash);
+}
+gutter.addEventListener("click", (e) => {
+  const row = e.target.closest("div[data-line]");
+  if (row) toggleBreakpoint(+row.dataset.line);
+});
+async function toggleBreakpoint(line) {
+  if (!state.file) return;
+  state.bps = await api("/api/breakpoints", { project: state.project, file: state.file, line });
+  renderGutter();
+}
+async function loadBreakpoints() {
+  if (!state.project) return;
+  state.bps = await api("/api/breakpoints?project=" + encodeURIComponent(state.project));
+  renderGutter();
+}
+function cursorLine() { return code.value.slice(0, code.selectionStart).split("\n").length; }
+function gotoLine(line) {
+  const lines = code.value.split("\n");
+  const start = lines.slice(0, line - 1).reduce((a, l) => a + l.length + 1, 0);
+  code.focus(); code.setSelectionRange(start, start + (lines[line - 1] || "").length);
+  code.scrollTop = Math.max(0, (line - 6) * 20);
+}
+/* Coloration syntaxique C/C++ */
+const hl = $("hl");
+const KW = new Set(("auto break case char const continue default do double else enum extern float for goto if inline int long " +
+  "register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while bool true false " +
+  "NULL nullptr class namespace template typename public private protected new delete this virtual override using").split(" "));
+const TYPE_RE = /^(u?int(8|16|32|64)_t|u?intptr_t|s?size_t|off_t|pid_t|FILE|[A-Za-z]\w*_t)$/;
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+function highlightSrc(src) {
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(^[ \t]*#[^\n]*)|(\b0[xX][0-9a-fA-F]+\w*|\b\d+(?:\.\d+)?\w*)|([A-Za-z_]\w*)(?=\s*\()|([A-Za-z_]\w*)/gm;
+  let out = "", last = 0, m;
+  while ((m = re.exec(src))) {
+    const tok = m[0];
+    const cls = m[1] ? "c" : m[2] ? "s" : m[3] ? "p" : m[4] ? "n" : KW.has(tok) ? "k" : m[5] ? "f" : TYPE_RE.test(tok) ? "t" : null;
+    out += esc(src.slice(last, m.index)) + (cls ? `<span class="h${cls}">${esc(tok)}</span>` : esc(tok));
+    last = re.lastIndex;
+  }
+  return out + esc(src.slice(last)) + "\n ";
+}
+let hlFrame = 0;
+function highlight() {
+  cancelAnimationFrame(hlFrame);
+  hlFrame = requestAnimationFrame(() => { hl.innerHTML = highlightSrc(code.value); syncScroll(); });
+}
+function syncScroll() { hl.scrollTop = code.scrollTop; hl.scrollLeft = code.scrollLeft; gutter.scrollTop = code.scrollTop; positionCurLine(); }
+function setReadOnly(ro) { code.readOnly = ro; $("codeArea").classList.toggle("readonly", ro); }
+
+/* Sauvegarde automatique : 0,8 s après la dernière frappe */
+let saveTimer = 0;
+code.addEventListener("input", () => {
+  state.dirty = true; $("modified").className = "modified"; $("modified").textContent = t("ed.modified");
+  highlight(); renderGutter();
+  clearTimeout(saveTimer); saveTimer = setTimeout(save, 800);
+});
+code.addEventListener("scroll", syncScroll);
+code.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const s = code.selectionStart;
+    code.setRangeText("    ", s, code.selectionEnd, "end");
+    code.dispatchEvent(new Event("input"));
+  }
+});
+async function save() {
+  clearTimeout(saveTimer);
+  if (!state.file || !state.dirty) return;
+  const content = code.value, project = state.project, file = state.file;
+  state.lastSaved = { project, file, content };
+  await api(`/api/file/${encodeURIComponent(project)}/${file.split("/").map(encodeURIComponent).join("/")}`, { content });
+  if (state.file === file && code.value === content) {
+    state.dirty = false; $("modified").className = "saved"; $("modified").textContent = t("ed.saved");
+  }
+}
+
+/* Fichier modifié en dehors de Forge5 (VS Code, Notepad++…) : on recharge tout seul */
+async function onFsEvent(ev) {
+  if (ev.project !== state.project) return;
+  if (ev.kind !== "changed") { await loadProjects(); }
+  if (ev.file !== state.file) return;
+  if (ev.kind === "removed") {
+    state.file = null; state.dirty = false;
+    $("editor").hidden = true; $("placeholder").hidden = false; $("curFile").textContent = t("ed.deleted");
+    return;
+  }
+  const j = await api(`/api/file/${encodeURIComponent(ev.project)}/${ev.file.split("/").map(encodeURIComponent).join("/")}`);
+  if (j.content === code.value) return;                 // c'est notre propre sauvegarde
+  if (state.dirty) {
+    appendLog("build", { text: t("ed.conflict", { f: ev.file }), level: "warn" });
+    return;
+  }
+  const { selectionStart: s, selectionEnd: e, scrollTop: top } = code;
+  code.value = j.content; highlight();
+  code.setSelectionRange(Math.min(s, j.content.length), Math.min(e, j.content.length)); code.scrollTop = top;
+  renderGutter();
+  $("modified").className = "saved"; $("modified").textContent = t("ed.reloaded");
+}
+
+/* ---------- Actions ---------- */
+async function job(kind) {
+  if (!state.project || state.busy) return;
+  await save();
+  if (kind !== "deploy") { state.diags = []; renderProblems(); renderGutter(); clearLog("build"); }
+  if (kind !== "build") clearLog("ps5");
+  showTab(kind === "deploy" ? "ps5" : "build");
+  await api(`/api/${kind}`, { project: state.project });
+}
+function updateButtons() {
+  const debugging = state.dbg.state !== "idle";
+  const off = !state.project || state.busy || debugging;
+  $("btnBuild").disabled = $("btnDeploy").disabled = $("btnRun").disabled = $("btnDebug").disabled = off;
+  $("btnRun").textContent = state.busy ? t("btn.busy") : state.cfg.target === "pc" ? t("btn.run.pc") : t("btn.run");
+  $("dbgbar").hidden = !debugging; $("btnDebug").hidden = debugging;
+  const st = state.dbg.state, stopped = st === "stopped";
+  for (const id of ["dbContinue", "dbNext", "dbStep", "dbFinish"]) $(id).disabled = !stopped;
+  $("dbPause").disabled = st !== "running";
+  updateAuto();
+  $("dbgState").textContent = st === "idle" ? "" : t(st === "stopped" && state.dbg.crash ? "dbgstate.crash" : "dbgstate." + st);
+}
+$("btnBuild").onclick = () => job("build");
+$("btnDeploy").onclick = () => job("deploy");
+$("btnRun").onclick = () => job("run");
+
+/* ---------- Débogueur ---------- */
+async function startDebug() {
+  if (!state.project || state.busy || state.dbg.state !== "idle") return;
+  await save();
+  state.diags = []; renderProblems(); clearLog("build"); clearLog("ps5"); clearLog("debug");
+  state.prevVars = {};
+  showTab("build");
+  await api("/api/debug/start", { project: state.project });
+}
+const dbg = (action) => api("/api/debug/control", { action });
+$("btnDebug").onclick = startDebug;
+$("dbContinue").onclick = () => dbg("continue");
+$("dbPause").onclick = () => dbg("pause");
+$("dbNext").onclick = () => dbg("next");
+$("dbStep").onclick = () => dbg("step");
+$("dbFinish").onclick = () => dbg("finish");
+$("dbStop").onclick = () => dbg("stop");
+
+async function onDebugState(ev) {
+  const wasIdle = state.dbg.state === "idle";
+  state.dbg = { ...ev, project: state.project };
+  setReadOnly(ev.state !== "idle");
+  if (wasIdle && ev.state !== "idle") showTab("debug");
+  if (ev.state === "stopped") {
+    if (ev.file && ev.line) {
+      if (ev.file !== state.file) await openFile(state.project, ev.file);
+      const top = (ev.line - 1) * 20;
+      if (top < code.scrollTop || top > code.scrollTop + code.clientHeight - 40) code.scrollTop = Math.max(0, top - 100);
+    }
+    renderVars(ev.variables || []);
+    renderStack(ev.stack || [], 0);
+    refreshWatches();
+    if (ev.crash) showTab("debug");
+  }
+  if (ev.state === "idle") { $("dbgVars").innerHTML = $("dbgStack").innerHTML = '<div class="empty">—</div>'; }
+  renderGutter(); updateButtons();
+}
+function renderVars(vars) {
+  const box = $("dbgVars"); box.innerHTML = "";
+  if (!vars.length) { box.innerHTML = `<div class="empty">${esc(t("dbg.novars"))}</div>`; return; }
+  const next = {};
+  for (const v of vars) {
+    const changed = v.name in state.prevVars && state.prevVars[v.name] !== v.value;
+    next[v.name] = v.value;
+    const row = document.createElement("div"); row.className = "var";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = v.name + (v.arg ? " (arg)" : "");
+    const val = document.createElement("span"); val.className = "v" + (changed ? " changed" : ""); val.textContent = v.value;
+    row.append(n, val); box.append(row);
+  }
+  state.prevVars = next;
+}
+function renderStack(stack, sel) {
+  const box = $("dbgStack"); box.innerHTML = "";
+  for (const f of stack) {
+    const row = document.createElement("div"); row.className = "frame" + (f.level === sel ? " sel" : "");
+    row.textContent = f.func + "() ";
+    const s = document.createElement("small");
+    s.textContent = f.src ? `${f.src}:${f.line}` : (f.addr || "");
+    row.append(s);
+    row.onclick = async () => {
+      const r = await api("/api/debug/frame", { level: f.level });
+      state.prevVars = {}; renderVars(r.variables); renderStack(stack, f.level);
+      if (f.file) await openFile(state.project, f.file, f.line);
+    };
+    box.append(row);
+  }
+}
+async function refreshWatches() {
+  const box = $("dbgWatch"); box.innerHTML = "";
+  for (const [i, expr] of state.watches.entries()) {
+    const row = document.createElement("div"); row.className = "var";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = expr;
+    const v = document.createElement("span"); v.className = "v"; v.textContent = "…";
+    const x = document.createElement("span"); x.className = "x"; x.textContent = "✕"; x.title = t("dbg.unwatch");
+    x.onclick = () => { state.watches.splice(i, 1); refreshWatches(); };
+    row.append(n, v, x); box.append(row);
+    if (state.dbg.state === "stopped") {
+      const r = await api("/api/debug/eval", { expr });
+      v.textContent = r.error ? "⚠ " + r.error : r.value;
+      if (r.error) v.style.color = "var(--dim)";
+    } else v.textContent = "—";
+  }
+}
+$("watchIn").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.value.trim()) {
+    state.watches.push(e.target.value.trim()); e.target.value = ""; refreshWatches();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  const debugging = state.dbg.state !== "idle";
+  if (e.key === "F9") { e.preventDefault(); if (state.file) toggleBreakpoint(cursorLine()); }
+  else if (e.key === "F5" && e.shiftKey && debugging) { e.preventDefault(); dbg("stop"); }
+  else if (debugging && e.key === "F8") { e.preventDefault(); dbg("continue"); }
+  else if (debugging && e.key === "F10") { e.preventDefault(); dbg("next"); }
+  else if (debugging && e.key === "F11") { e.preventDefault(); dbg(e.shiftKey ? "finish" : "step"); }
+  else if (debugging && (e.key === "F5" || e.key === "F6" || e.key === "F7")) { e.preventDefault(); }
+  else if (e.key === "F5") { e.preventDefault(); job("run"); }
+  else if (e.key === "F6") { e.preventDefault(); job("deploy"); }
+  else if (e.key === "F7") { e.preventDefault(); job("build"); }
+  else if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); save(); }
+});
+window.addEventListener("beforeunload", (e) => { if (state.dirty) e.preventDefault(); });
+
+/* ---------- Console ---------- */
+function showTab(name) {
+  document.querySelectorAll(".ctab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+  document.querySelectorAll(".clog").forEach(l => l.classList.toggle("active", l.id === "log-" + name));
+}
+document.querySelectorAll(".ctab").forEach(tab => { tab.onclick = () => showTab(tab.dataset.tab); });
+const logBox = (ch) => ch === "debug" ? $("dbgLog") : $("log-" + ch);
+function clearLog(ch) { logBox(ch).innerHTML = ""; }
+$("btnClear").onclick = () => {
+  const active = document.querySelector(".ctab.active").dataset.tab;
+  if (active === "problems") { state.diags = []; renderProblems(); renderGutter(); } else clearLog(active);
+};
+function appendLog(ch, ev) {
+  const box = logBox(ch); if (!box) return;
+  const empty = box.querySelector(".empty"); if (empty) empty.remove();
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+  const div = document.createElement("div");
+  div.textContent = ev.text;
+  if (ev.level) div.className = "l-" + ev.level;
+  if (ev.file && ev.line_no) {
+    div.classList.add("l-link");
+    div.onclick = () => openDiag(ev.file, ev.line_no);
+  }
+  box.append(div);
+  if (box.children.length > 5000) box.firstChild.remove();
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+function openDiag(file, line) {
+  const p = state.projects.find(x => x.name === state.project);
+  const match = p && p.files.find(f => file === f || file.endsWith("/" + f));
+  if (match) openFile(state.project, match, line);
+}
+function renderProblems() {
+  const box = $("log-problems"); box.innerHTML = "";
+  const errs = state.diags.filter(d => d.severity === "error").length;
+  const warns = state.diags.filter(d => d.severity === "warning").length;
+  $("probBadge").innerHTML = errs ? `<span class="badge">${errs}</span>` : warns ? `<span class="badge w">${warns}</span>` : "";
+  if (!state.diags.length) { box.innerHTML = `<div class="empty">${esc(t("problems.none"))}</div>`; return; }
+  for (const d of state.diags) {
+    const el = document.createElement("div"); el.className = "problem";
+    const ic = document.createElement("span");
+    ic.className = "l-" + d.severity; ic.textContent = d.severity === "error" ? "✖ " : d.severity === "warning" ? "⚠ " : "ℹ ";
+    const loc = document.createElement("span"); loc.className = "l-dim"; loc.textContent = `  ${d.file}:${d.line}:${d.col}`;
+    el.append(ic, document.createTextNode(d.msg), loc);
+    el.onclick = () => openDiag(d.file, d.line);
+    box.append(el);
+  }
+}
+
+/* ---------- Évènements temps réel ---------- */
+function connectEvents() {
+  const es = new EventSource("/api/events");
+  es.onmessage = (m) => {
+    const ev = JSON.parse(m.data);
+    if (ev.channel === "status") {
+      if ("busy" in ev) { state.busy = ev.busy; updateButtons(); if (!ev.busy) loadProjects(); }
+      if ("klog" in ev) { state.klog = ev.klog; $("btnKlog").textContent = t(ev.klog ? "klog.stop" : "klog.start"); }
+      if ("watch" in ev) { state.watch = ev.watch; updateAuto(); }
+      if ("sim_running" in ev) { $("btnSimStop").hidden = !ev.sim_running; if (ev.sim_running) showTab("ps5"); }
+      return;
+    }
+    if (ev.channel === "dbgstate") { onDebugState(ev); return; }
+    if (ev.channel === "fs") { onFsEvent(ev); return; }
+    if (ev.channel === "notify") { showToast(ev.text, ev.sub); return; }
+    if (ev.channel === "payloads") {
+      const { channel, text, t: _t, ...rest } = ev;
+      state.pl = { ...state.pl, ...rest }; renderPayloads(); return;
+    }
+    if (ev.channel === "diag") {
+      state.diags.push(ev); renderProblems(); renderGutter();
+      if (ev.severity === "error" && state.diags.filter(d => d.severity === "error").length === 1) showTab("problems");
+      return;
+    }
+    appendLog(ev.channel === "system" ? "build" : ev.channel, ev);
+  };
+  es.onerror = () => { es.close(); setTimeout(connectEvents, 2000); };
+}
+
+/* ---------- Statut console ---------- */
+async function pollStatus() {
+  try {
+    const s = await api("/api/status");
+    $("dotElf").classList.toggle("on", s.elfldr);
+    $("dotKlog").classList.toggle("on", s.klog);
+  } catch {}
+  setTimeout(pollStatus, 4000);
+}
+$("btnKlog").onclick = async () => {
+  showTab("klog");
+  await api(state.klog ? "/api/klog/stop" : "/api/klog/start", {});
+};
+
+/* ---------- Paramètres ---------- */
+async function loadConfig() {
+  state.cfg = await api("/api/config");
+  $("ipPill").textContent = "PS5 " + state.cfg.ps5_ip;
+  applyTarget();
+}
+
+/* ---------- Cible : PS5 ou PC (mode sans PS5) ---------- */
+function applyTarget() {
+  const pc = state.cfg.target === "pc";
+  document.body.classList.toggle("pc", pc);
+  document.querySelectorAll("#targetSeg button").forEach(b => b.classList.toggle("on", b.dataset.t === (pc ? "pc" : "ps5")));
+  updateButtons();
+}
+document.querySelectorAll("#targetSeg button").forEach(b => b.onclick = async () => {
+  if (state.dbg.state !== "idle" || state.busy) return;
+  state.cfg = await api("/api/config", { target: b.dataset.t });
+  applyTarget();
+  appendLog("build", { text: t(b.dataset.t === "pc" ? "target.pc.msg" : "target.ps5.msg"), level: "ok" });
+});
+$("btnSimStop").onclick = () => api("/api/sim/stop", {});
+
+/* ---------- Notifications PS5 (simulées) ---------- */
+function showToast(title, sub) {
+  const toast = document.createElement("div"); toast.className = "toast";
+  const ic = document.createElement("div"); ic.className = "ic"; ic.textContent = "🔔";
+  const body = document.createElement("div");
+  const b = document.createElement("b"); b.textContent = title || t("toast.empty");
+  body.append(b);
+  if (sub) { const s = document.createElement("span"); s.textContent = sub; body.append(s); }
+  const sm = document.createElement("small"); sm.textContent = t("toast.footer"); body.append(sm);
+  toast.append(ic, body);
+  $("toasts").prepend(toast);
+  setTimeout(() => { toast.classList.add("out"); setTimeout(() => toast.remove(), 300); }, 6000);
+}
+$("btnSettings").onclick = () => {
+  const c = state.cfg;
+  $("cfgIp").value = c.ps5_ip; $("cfgElf").value = c.elf_port; $("cfgKlog").value = c.klog_port;
+  $("cfgSdk").value = c.sdk_path; $("cfgCmd").value = c.build_command; $("cfgWs").value = c.workspace;
+  $("cfgGdb").value = c.gdb_path; $("cfgGdbPort").value = c.gdb_port; $("cfgGdbDir").value = c.gdb_remote_dir;
+  $("dlgSettings").showModal();
+};
+$("cfgCancel").onclick = () => $("dlgSettings").close();
+$("cfgSave").onclick = async () => {
+  await api("/api/config", {
+    ps5_ip: $("cfgIp").value.trim(), elf_port: +$("cfgElf").value, klog_port: +$("cfgKlog").value,
+    sdk_path: $("cfgSdk").value.trim(), build_command: $("cfgCmd").value.trim() || "make", workspace: $("cfgWs").value.trim(),
+    gdb_path: $("cfgGdb").value.trim() || "gdb-multiarch", gdb_port: +$("cfgGdbPort").value || 2159,
+    gdb_remote_dir: $("cfgGdbDir").value.trim() || "/user/temp",
+  });
+  $("dlgSettings").close(); await loadConfig(); await loadProjects();
+};
+
+/* ---------- Nouveau projet ---------- */
+$("btnNew").onclick = () => {
+  $("newTpl").innerHTML = state.templates.map(tpl => `<option>${esc(tpl)}</option>`).join("");
+  $("newName").value = ""; $("dlgNew").showModal(); $("newName").focus();
+};
+$("newCancel").onclick = () => $("dlgNew").close();
+$("newOk").onclick = async () => {
+  try {
+    const name = $("newName").value.trim();
+    await api("/api/projects", { name, template: $("newTpl").value });
+    $("dlgNew").close(); await selectProject(name);
+  } catch (e) { alert(e.message); }
+};
+$("newName").addEventListener("keydown", (e) => { if (e.key === "Enter") $("newOk").click(); });
+
+/* ---------- Redimensionnement de la console ---------- */
+$("splitter").onmousedown = (e) => {
+  e.preventDefault();
+  const move = (ev) => {
+    const h = Math.min(window.innerHeight - 160, Math.max(100, window.innerHeight - ev.clientY));
+    document.querySelector("main").style.setProperty("--console-h", h + "px");
+  };
+  const up = () => { removeEventListener("mousemove", move); removeEventListener("mouseup", up); };
+  addEventListener("mousemove", move); addEventListener("mouseup", up);
+};
+
+/* ---------- Mode Auto ---------- */
+function updateAuto() {
+  const on = !!state.project && state.watch === state.project;
+  $("btnAuto").classList.toggle("on", on);
+  $("btnAuto").textContent = t(on ? "btn.auto.on" : "btn.auto");
+  $("btnAuto").disabled = !state.project;
+}
+$("btnAuto").onclick = () => api("/api/watch", { project: state.watch === state.project ? null : state.project });
+
+/* ---------- SDK ---------- */
+$("btnSdk").onclick = async () => {
+  const box = $("sdkInfo"); box.textContent = t("sdk.checking");
+  const r = await api("/api/sdk");
+  const parts = [];
+  if (r.local) parts.push(esc(t(r.local.found ? "sdk.found" : "sdk.invalid", { p: r.local.path })));
+  else parts.push(esc(t("sdk.none")));
+  if (r.latest) parts.push(`${esc(t("sdk.latest", { tag: r.latest.tag, date: r.latest.date }))} — <a href="${encodeURI(r.latest.url)}" target="_blank" rel="noopener">${esc(t("sdk.download"))}</a>`);
+  if (r.error) parts.push("⚠ " + esc(r.error));
+  box.innerHTML = parts.join("<br>");
+};
+
+/* ---------- Détection de la PS5 ---------- */
+$("btnDetect").onclick = async () => {
+  const info = $("detectInfo"), btn = $("btnDetect");
+  btn.disabled = true; info.style.color = "var(--dim)"; info.textContent = t("set.detecting");
+  try {
+    const r = await api("/api/discover");
+    if (r.found.length) {
+      $("cfgIp").value = r.found[0].ip;
+      info.style.color = "var(--ok)";
+      info.textContent = r.found.map(f => t("set.found", { ip: f.ip })).join(" · ");
+    } else {
+      info.style.color = "var(--warn)"; info.textContent = t("set.notfound");
+    }
+  } catch (e) { info.textContent = e.message; }
+  btn.disabled = false;
+};
+
+/* ---------- Payloads ---------- */
+state.pl = { items: [], active: {} };
+function renderPayloads() {
+  const p = state.pl;
+  $("plBadge").hidden = !p.updates;
+  $("plBadge").textContent = p.updates || "";
+  $("plAuto").checked = !!p.auto;
+  $("plCheck").disabled = !!p.checking;
+  $("plCheck").textContent = t(p.checking ? "pl.checking" : "pl.check");
+  $("plLast").textContent = t("pl.lastcheck", { t: p.last_check || t("pl.never") });
+  const list = $("plList"); list.innerHTML = "";
+  for (const it of p.items) {
+    const card = document.createElement("div"); card.className = "pl" + (it.update && it.installed ? " upd" : "");
+    const name = document.createElement("div"); name.className = "pl-name";
+    const dot = document.createElement("span"); dot.className = "dot" + (p.active[it.id] ? " on" : "");
+    dot.title = t(p.active[it.id] ? "pl.active" : "pl.inactive");
+    const small = document.createElement("small"); small.textContent = t("pl.port", { p: it.port });
+    name.append(dot, document.createTextNode(it.name), small);
+    const desc = document.createElement("div"); desc.className = "pl-desc"; desc.textContent = t("pl.d." + it.id);
+    const ver = document.createElement("div"); ver.className = "pl-ver";
+    const inst = document.createElement("span");
+    inst.textContent = it.installed ? t("pl.installed", { v: it.installed.tag }) : t("pl.notinstalled");
+    ver.append(inst);
+    if (it.latest) {
+      const lat = document.createElement("span");
+      if (it.installed && !it.update) { lat.className = "ok"; lat.textContent = "  " + t("pl.uptodate"); }
+      else { lat.className = it.installed ? "new" : ""; lat.textContent = "  · " + t("pl.latest", { v: it.latest.tag, d: it.latest.date }); }
+      ver.append(lat);
+    }
+    const src = document.createElement("a"); src.href = `https://github.com/${it.repo}`; src.target = "_blank"; src.rel = "noopener";
+    src.textContent = t("pl.source") + " ↗";
+    desc.append(" ", src);
+    const act = document.createElement("div"); act.className = "pl-act";
+    if (!it.installed || it.update) {
+      const b = document.createElement("button");
+      b.textContent = t(it.installed ? "pl.update" : "pl.download");
+      if (it.installed) b.className = "primary";
+      b.disabled = !it.latest;
+      b.onclick = () => { b.disabled = true; api("/api/payloads/download", { id: it.id }); };
+      act.append(b);
+    }
+    if (it.send) {
+      const s = document.createElement("button"); s.textContent = t("pl.send");
+      s.disabled = !it.installed || state.cfg.target === "pc";
+      s.onclick = () => { api("/api/payloads/send", { id: it.id }); showTab("ps5"); setTimeout(refreshPayloads, 3000); };
+      act.append(s);
+    } else {
+      const s = document.createElement("small"); s.className = "muted"; s.style.color = "var(--dim)"; s.textContent = t("pl.loaderonly");
+      act.append(s);
+    }
+    card.append(name, act, desc, ver);
+    list.append(card);
+  }
+}
+async function refreshPayloads() {
+  try { state.pl = { ...state.pl, ...(await api("/api/payloads")) }; renderPayloads(); } catch {}
+}
+$("btnPayloads").onclick = () => { renderPayloads(); $("dlgPayloads").showModal(); refreshPayloads(); };
+$("plClose").onclick = () => $("dlgPayloads").close();
+$("plCheck").onclick = () => api("/api/payloads/check", {});
+$("plAuto").onchange = async (e) => {
+  state.cfg = await api("/api/config", { payloads_auto_update: e.target.checked });
+  state.pl.auto = e.target.checked;
+};
+
+/* ---------- Launcher5 : menu, thème, fonds et musiques de la PS5 ---------- */
+const L5 = { data: null, menu: null, theme: null, dirty: false, open: new Set(), drag: null, tab: "menu", anim: 0 };
+const L5_COLORS = ["#3d8bfd", "#7c4dff", "#e5484d", "#f76b15", "#ffc53d", "#46a758", "#12a594", "#0090ff", "#d6409f", "#8d8d8d"];
+
+function l5Ok(msg) {
+  const s = $("l5Status"); s.textContent = "✔ " + msg; s.style.color = "var(--ok)";
+  clearTimeout(L5.okTimer); L5.okTimer = setTimeout(() => { s.style.color = ""; l5Status(); }, 5000);
+}
+function l5Err(msg) { $("l5Err").hidden = !msg; $("l5Err").textContent = msg || ""; }
+function l5Status() {
+  if (!L5.data) { $("l5Status").textContent = ""; return; }
+  $("l5Status").textContent = t("l5.status", { n: L5.data.catalog.length, ip: state.cfg.ps5_ip || "?" });
+}
+/* keep : recharge les fichiers sans perdre le menu et le thème en cours de modification */
+async function l5Load(keep) {
+  l5Err(""); $("l5Status").textContent = t("l5.loading");
+  const keepMenu = keep && L5.dirty && L5.menu ? L5.menu : null, keepTheme = keep && L5.theme ? L5.theme : null;
+  try {
+    L5.data = await api("/api/l5/state");
+    L5.menu = keepMenu || JSON.parse(JSON.stringify(L5.data.menu));
+    L5.menu.root = L5.menu.root || []; L5.menu.hidden = L5.menu.hidden || []; L5.menu.names = L5.menu.names || {};
+    if (!["flow", "grid", "classic"].includes(L5.menu.view)) L5.menu.view = "flow";
+    L5.theme = keepTheme || l5CleanTheme(L5.data.theme || L5.data.builtin[0]);
+    l5SetDirty(!!keepMenu);
+    $("l5Install").disabled = !L5.data.elf;
+    if (!L5.data.catalog.length) l5Err(t("l5.nocatalog"));
+  } catch (e) {
+    L5.data = null; l5Err(e.message);
+    $("l5Status").textContent = "";
+  }
+  l5Status(); l5RenderAll();
+}
+function l5RenderAll() { l5RenderTree(); l5RenderForm(); l5RenderPreview(); l5RenderMedia(); }
+function l5SetDirty(d) {
+  L5.dirty = d;
+  $("l5SaveMenu").textContent = (d ? "● " : "") + t("l5.savemenu");
+  $("l5SaveMenu").disabled = !L5.data;
+}
+const l5App = (id) => (L5.data?.catalog || []).find(a => a.id === id);
+const l5Name = (id) => L5.menu.names[id] || l5App(id)?.title || id;
+const l5Icon = (id) => "/api/l5/icon?id=" + encodeURIComponent(id);
+
+/* --- arbre du menu --- */
+function l5Count(arr) { let n = 0; for (const x of arr) n += x.folder !== undefined ? l5Count(x.items) : 1; return n; }
+function l5Matches(node, q) {
+  if (!q) return true;
+  if (node.folder !== undefined) return node.folder.toLowerCase().includes(q) || node.items.some(c => l5Matches(c, q));
+  return l5Name(node.app).toLowerCase().includes(q) || node.app.toLowerCase().includes(q);
+}
+function l5RenderTree() {
+  const box = $("l5Tree"); box.innerHTML = "";
+  if (!L5.menu) return;
+  $("l5ShowFolders").checked = !!L5.menu.folders;
+  $("l5View").value = L5.menu.view || "flow";
+  const q = $("l5Search").value.trim().toLowerCase();
+  box.append(l5RenderList(L5.menu.root, q));
+  const drop = document.createElement("div"); drop.className = "l5-rootdrop"; drop.textContent = t("l5.rootdrop");
+  drop.ondragover = (e) => { if (!L5.drag) return; e.preventDefault(); drop.classList.add("drop-into"); };
+  drop.ondragleave = () => drop.classList.remove("drop-into");
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("drop-into"); l5Move(L5.menu.root, L5.menu.root.length); };
+  box.append(drop);
+  const folders = (function f(a) { let n = 0; for (const x of a) if (x.folder !== undefined) n += 1 + f(x.items); return n; })(L5.menu.root);
+  $("l5Count").textContent = t("l5.count", { n: l5Count(L5.menu.root), f: folders });
+}
+function l5RenderList(arr, q) {
+  const wrap = document.createElement("div");
+  arr.forEach((node, i) => {
+    if (!l5Matches(node, q)) return;
+    const isF = node.folder !== undefined;
+    const row = document.createElement("div"); row.className = "l5-row"; row.draggable = true;
+    if (isF) {
+      const open = L5.open.has(node) || !!q;
+      const tw = document.createElement("span"); tw.className = "l5-twist"; tw.textContent = open ? "▾" : "▸";
+      tw.onclick = () => { L5.open.has(node) ? L5.open.delete(node) : L5.open.add(node); l5RenderTree(); };
+      const ic = document.createElement("div"); ic.className = "l5-fold-ic"; ic.style.background = node.color; ic.textContent = "📁";
+      const g = document.createElement("div"); g.className = "grow";
+      const n = document.createElement("span"); n.className = "l5-name"; n.textContent = node.folder;
+      const s = document.createElement("span"); s.className = "l5-sub"; s.textContent = t("l5.items", { n: l5Count(node.items) });
+      g.append(n, s);
+      const tools = document.createElement("div"); tools.className = "tools";
+      const col = document.createElement("input"); col.type = "color"; col.value = node.color; col.title = t("l5.color");
+      col.oninput = () => { node.color = col.value; ic.style.background = col.value; l5SetDirty(true); };
+      const rn = l5Btn("✎", t("l5.rename"), () => {
+        const v = prompt(t("l5.rename.folder"), node.folder);
+        if (v && v.trim()) { node.folder = v.trim().slice(0, 95); l5SetDirty(true); l5RenderTree(); }
+      });
+      const del = l5Btn("🗑", t("l5.delfolder"), () => {
+        if (!confirm(t("l5.delfolder.confirm", { f: node.folder }))) return;
+        arr.splice(arr.indexOf(node), 1, ...node.items); l5SetDirty(true); l5RenderTree();
+      });
+      tools.append(col, rn, del);
+      row.append(tw, ic, g, tools);
+      n.ondblclick = rn.onclick;
+      wrap.append(row);
+      if (open) { const kids = document.createElement("div"); kids.className = "l5-kids"; kids.append(l5RenderList(node.items, q)); wrap.append(kids); }
+    } else {
+      const app = l5App(node.app), hid = L5.menu.hidden.includes(node.app);
+      if (hid) row.classList.add("hid");
+      if (!app) row.classList.add("missing");
+      const sp = document.createElement("span"); sp.className = "l5-twist";
+      const img = document.createElement("img"); img.className = "l5-ic"; img.loading = "lazy"; img.alt = "";
+      if (app?.icon) img.src = l5Icon(node.app); else img.style.visibility = "hidden";
+      img.onerror = () => { img.style.visibility = "hidden"; };
+      const g = document.createElement("div"); g.className = "grow";
+      const n = document.createElement("span"); n.className = "l5-name"; n.textContent = l5Name(node.app);
+      const s = document.createElement("span"); s.className = "l5-sub";
+      s.textContent = (L5.menu.names[node.app] && app ? app.title + " · " : "") + node.app + (app ? "" : " — " + t("l5.missing"));
+      g.append(n, s);
+      const k = document.createElement("span"); k.className = "l5-kind"; k.textContent = app ? t("l5.kind." + app.kind) : "?";
+      const tools = document.createElement("div"); tools.className = "tools";
+      const rn = l5Btn("✎", t("l5.rename"), () => {
+        const v = prompt(t("l5.rename.app", { f: app?.title || node.app }), l5Name(node.app));
+        if (v === null) return;
+        if (!v.trim() || v.trim() === app?.title) delete L5.menu.names[node.app]; else L5.menu.names[node.app] = v.trim().slice(0, 95);
+        l5SetDirty(true); l5RenderTree();
+      });
+      const hd = l5Btn(hid ? "👁" : "🚫", t(hid ? "l5.show" : "l5.hide"), () => {
+        if (hid) L5.menu.hidden = L5.menu.hidden.filter(x => x !== node.app); else L5.menu.hidden.push(node.app);
+        l5SetDirty(true); l5RenderTree();
+      });
+      tools.append(rn, hd);
+      if (hid) { const b = document.createElement("span"); b.className = "l5-kind"; b.textContent = t("l5.hidden"); g.append(b); }
+      row.append(sp, img, g, k, tools);
+      n.ondblclick = rn.onclick;
+      wrap.append(row);
+    }
+    /* glisser-déposer */
+    row.ondragstart = (e) => { L5.drag = { arr, node }; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", "l5"); };
+    row.ondragend = () => { L5.drag = null; };
+    const zone = (e) => {
+      const r = row.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
+      return isF ? (y < .25 ? "before" : y > .75 && !L5.open.has(node) ? "after" : "into") : (y < .5 ? "before" : "after");
+    };
+    const clear = () => row.classList.remove("drop-before", "drop-after", "drop-into");
+    row.ondragover = (e) => {
+      if (!L5.drag || L5.drag.node === node) return;
+      e.preventDefault(); clear(); row.classList.add("drop-" + zone(e));
+    };
+    row.ondragleave = clear;
+    row.ondrop = (e) => {
+      e.preventDefault(); clear();
+      if (!L5.drag || L5.drag.node === node) return;
+      const z = zone(e);
+      if (z === "into") { l5Move(node.items, node.items.length); L5.open.add(node); }
+      else l5Move(arr, arr.indexOf(node) + (z === "after" ? 1 : 0));
+    };
+  });
+  return wrap;
+}
+function l5Btn(txt, title, fn) { const b = document.createElement("button"); b.textContent = txt; b.title = title; b.onclick = (e) => { e.stopPropagation(); fn(); }; return b; }
+function l5Contains(folder, arr) {   // arr est-il dans folder (ou dans un de ses sous-dossiers) ?
+  if (folder.items === arr) return true;
+  return folder.items.some(c => c.folder !== undefined && l5Contains(c, arr));
+}
+function l5Depth(arr, target, d = 0) {
+  if (arr === target) return d;
+  for (const c of arr) if (c.folder !== undefined) { const r = l5Depth(c.items, target, d + 1); if (r >= 0) return r; }
+  return -1;
+}
+function l5Move(toArr, index) {
+  const { arr, node } = L5.drag || {};
+  L5.drag = null;
+  if (!node) return;
+  if (node.folder !== undefined && l5Contains(node, toArr)) { l5Err(t("l5.err.self")); return; }
+  if (l5Depth(L5.menu.root, toArr) >= 8) { l5Err(t("l5.err.depth")); return; }
+  const from = arr.indexOf(node);
+  arr.splice(from, 1);
+  if (arr === toArr && from < index) index--;
+  toArr.splice(index, 0, node);
+  l5Err(""); l5SetDirty(true); l5RenderTree();
+}
+$("l5NewFolder").onclick = () => {
+  const v = prompt(t("l5.newfolder.prompt"));
+  if (!v || !v.trim()) return;
+  const n = (function f(a) { let k = 0; for (const x of a) if (x.folder !== undefined) k += 1 + f(x.items); return k; })(L5.menu.root);
+  const f = { folder: v.trim().slice(0, 95), color: L5_COLORS[n % L5_COLORS.length], items: [] };
+  L5.menu.root.unshift(f); L5.open.add(f);
+  if (!L5.menu.folders) { L5.menu.folders = true; }
+  l5SetDirty(true); l5RenderTree();
+};
+$("l5Search").oninput = () => l5RenderTree();
+$("l5Expand").onclick = () => { (function f(a) { for (const x of a) if (x.folder !== undefined) { L5.open.add(x); f(x.items); } })(L5.menu?.root || []); l5RenderTree(); };
+$("l5Collapse").onclick = () => { L5.open.clear(); l5RenderTree(); };
+$("l5ShowFolders").onchange = (e) => { if (L5.menu) { L5.menu.folders = e.target.checked; l5SetDirty(true); } };
+$("l5View").onchange = (e) => { if (L5.menu) { L5.menu.view = e.target.value; l5SetDirty(true); } };
+$("l5SaveMenu").onclick = async () => {
+  try { await api("/api/l5/menu", { menu: L5.menu }); l5SetDirty(false); l5Err(""); l5Ok(t("l5.saved")); }
+  catch (e) { l5Err(e.message); }
+};
+
+/* --- thème : studio (galerie, réglages visuels, aperçu fidèle) --- */
+const L5_SWATCH = {   /* mêmes couleurs que le nuancier du launcher sur la TV */
+  acc: ["#00e5ff", "#00fff0", "#00ffa3", "#39ff14", "#33ff66", "#c6ff00", "#fcee0a", "#ffb300", "#ff9100", "#ff4d1a",
+        "#ff1f3d", "#e50914", "#ff3cac", "#ff00c8", "#ff2bd6", "#b26bff", "#7c4dff", "#2979ff", "#d4af37", "#ffffff"],
+  dark: ["#000000", "#07000f", "#0d0221", "#14002a", "#170a33", "#2d0b3f", "#05081a", "#020c1b", "#03254a", "#10293d",
+         "#0a0000", "#220005", "#1a0710", "#3a1424", "#100503", "#2e0b05", "#050805", "#101a05", "#000a03", "#0a2214"],
+};
+const L5_GROUPS = [
+  ["l5.g.colors", [["couleur", "color", "acc"], ["couleur2", "color", "acc"], ["fond_haut", "color", "dark"], ["fond_bas", "color", "dark"]]],
+  ["l5.g.bg", [["arriere_plan", "chips", ["illustration", "degrade", "image"]], ["image", "images"], ["illustration", "range"]]],
+  ["l5.g.fx", [["halos", "range"], ["particules", "chips", ["aucune", "peu", "beaucoup"]],
+               ["forme_particules", "chips", ["points", "etincelles", "flocons"]], ["sens", "chips", ["montent", "tombent"]],
+               ["coins", "chips", ["droits", "arrondis", "tres_arrondis"]]]],
+  ["l5.g.ui", [["horloge", "chips", ["24h", "12h", "masquee"]], ["musique", "music"], ["volume", "range"]]],
+];
+const L5_HEX = /^#[0-9a-f]{6}$/i;
+/* valeurs sûres (thème importé ou abîmé) : comme le serveur et le launcher */
+function l5CleanTheme(src) {
+  const base = L5.data?.builtin?.[0] || {};
+  const out = { ...base };
+  if (src && typeof src === "object") {
+    out.nom = String(src.nom || base.nom || "Sans nom").slice(0, 46);
+    for (const k of ["couleur", "couleur2", "fond_haut", "fond_bas"]) if (L5_HEX.test(src[k] || "")) out[k] = src[k].toLowerCase();
+    for (const [, fields] of L5_GROUPS) for (const [k, type, opts] of fields)
+      if (type === "chips" && opts.includes(src[k])) out[k] = src[k];
+    for (const k of ["illustration", "halos", "volume"]) { const n = parseInt(src[k], 10); if (!isNaN(n)) out[k] = Math.max(0, Math.min(100, n)); }
+    out.image = String(src.image || "").split("/").pop().slice(0, 120);
+    const m = String(src.musique || "");
+    out.musique = m === "*" ? "*" : m.split("/").pop().slice(0, 120);
+  }
+  return out;
+}
+function l5Visible(key) {
+  const th = L5.theme;
+  if (key === "image") return th.arriere_plan === "image";
+  if (key === "illustration") return th.arriere_plan === "illustration";
+  if (key === "forme_particules" || key === "sens") return th.particules !== "aucune";
+  if (key === "volume") return !!th.musique;
+  return true;
+}
+function l5ThemeChanged(rerender) {
+  if (rerender) l5RenderForm(); else l5RenderGallery();
+  l5RenderPreview();
+}
+function l5El(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+
+/* galerie : thèmes fournis puis thèmes enregistrés sur la PS5 */
+function l5RenderGallery() {
+  const box = $("l5Gallery"); box.innerHTML = "";
+  if (!L5.data || !L5.theme) return;
+  const th = L5.theme;
+  const list = [...L5.data.builtin.map(b => ({ t: b, mine: false })), ...L5.data.user_themes.map(u => ({ t: u.theme, mine: true }))];
+  for (const { t: src, mine } of list) {
+    const same = src.nom === th.nom || src.nom + " perso" === th.nom;
+    const c = l5El("button", "l5-card-th" + (same ? " on" : ""));
+    c.style.setProperty("--a", src.couleur); c.style.setProperty("--b", src.couleur2);
+    c.style.background = `linear-gradient(${src.fond_haut}, ${src.fond_bas})`;
+    c.innerHTML = `<i class="dot"></i><i class="bar"></i><i class="bar2"></i>`;
+    c.append(l5El("span", "nm", src.nom));
+    if (mine) c.append(l5El("span", "mine", "★"));
+    c.title = src.nom;
+    c.onclick = () => {
+      const keep = { image: th.image, musique: th.musique, volume: th.volume };
+      L5.theme = l5CleanTheme({ ...src, ...(mine ? {} : keep) });
+      l5ThemeChanged(true);
+    };
+    box.append(c);
+  }
+}
+
+function l5RenderForm() {
+  const box = $("l5Form"); box.innerHTML = "";
+  l5RenderGallery();
+  if (!L5.data || !L5.theme) return;
+  const th = L5.theme;
+  $("l5Studio").style.setProperty("--acc", th.couleur);
+  $("l5Studio").style.setProperty("--acc2", th.couleur2);
+  /* nom */
+  const nm = l5El("div", "l5-name-row");
+  const ni = l5El("input"); ni.value = th.nom; ni.maxLength = 46; ni.spellcheck = false;
+  ni.oninput = () => { th.nom = ni.value; l5RenderGallery(); };
+  nm.append(l5El("span", "lbl", t("l5.f.nom")), ni);
+  box.append(nm);
+
+  for (const [gkey, fields] of L5_GROUPS) {
+    const g = l5El("section", "l5-grp");
+    g.append(l5El("h4", "", t(gkey)));
+    for (const [key, type, opts] of fields) {
+      if (!l5Visible(key)) continue;
+      const row = l5El("div", "l5-ctl");
+      row.append(l5El("span", "lbl", t("l5.f." + key)));
+      const set = (v, rerender) => { th[key] = v; l5ThemeChanged(rerender); };
+      if (type === "color") {
+        const sw = l5El("div", "l5-sw");
+        for (const c of L5_SWATCH[opts]) {
+          const b = l5El("button", c === th[key] ? "on" : ""); b.style.background = c; b.title = c;
+          b.onclick = () => { set(c); sw.querySelectorAll("button.on").forEach(x => x.classList.remove("on")); b.classList.add("on"); pick.value = c; };
+          sw.append(b);
+        }
+        const pick = l5El("input"); pick.type = "color"; pick.value = th[key]; pick.title = t("l5.custom");
+        pick.oninput = () => { sw.querySelectorAll("button.on").forEach(x => x.classList.remove("on")); set(pick.value); };
+        sw.append(pick);
+        row.append(sw);
+        if (key === "couleur") $("l5Studio").style.setProperty("--acc", th.couleur);
+      } else if (type === "chips") {
+        const ch = l5El("div", "l5-chips");
+        for (const o of opts) {
+          const b = l5El("button", o === th[key] ? "on" : "", t("l5.v." + o));
+          b.onclick = () => set(o, true);
+          ch.append(b);
+        }
+        row.append(ch);
+      } else if (type === "range") {
+        const w = l5El("div", "l5-rng");
+        const r = l5El("input"); r.type = "range"; r.min = 0; r.max = 100; r.step = 10; r.value = th[key];
+        const b = l5El("b", "", th[key] + " %");
+        const paint = () => r.style.setProperty("--p", r.value + "%");
+        r.oninput = () => { b.textContent = r.value + " %"; paint(); set(+r.value); };
+        paint();
+        w.append(r, b);
+        row.append(w);
+      } else {
+        const s = l5El("select");
+        const list = type === "images" ? [["", t("l5.v.noimage")], ...L5.data.files.fonds.map(f => [f.name, f.name])]
+          : [["", t("l5.v.nomusic")], ...(L5.data.files.musique.length ? [["*", t("l5.v.allmusic")]] : []), ...L5.data.files.musique.map(f => [f.name, f.name])];
+        s.innerHTML = list.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+        s.value = list.some(([v]) => v === th[key]) ? th[key] : "";
+        s.onchange = () => set(s.value, true);
+        row.append(s);
+        const empty = type === "images" ? !L5.data.files.fonds.length : !L5.data.files.musique.length;
+        if (empty) row.append(l5El("div", "l5-hint", t(type === "images" ? "l5.noimages" : "l5.nomusics")));
+      }
+      g.append(row);
+    }
+    box.append(g);
+  }
+  l5RenderPreview();
+}
+
+function l5Hex(h, a) { const n = parseInt(String(h).slice(1), 16) || 0; return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
+/* aperçu à l'échelle de la TV (1920×1080), dans la présentation choisie pour le menu */
+function l5RenderPreview() {
+  const st = $("l5Stage"); if (!L5.theme) { st.innerHTML = ""; return; }
+  const th = L5.theme, cat = (L5.data?.catalog || []).filter(a => a.icon).slice(0, 12);
+  const g = th.halos / 100, rad = { droits: 0, arrondis: 18, tres_arrondis: 44 }[th.coins] ?? 18;
+  const view = L5.menu?.view || "flow";
+  const first = cat[view === "flow" ? Math.min(3, cat.length - 1) : 0], title = first ? l5Name(first.id) : "Launcher5";
+  st.style.setProperty("--acc", th.couleur);
+  const now = new Date();
+  const hh = th.horloge === "12h" ? `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, "0")} ${now.getHours() < 12 ? "AM" : "PM"}`
+                                  : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const img = (a) => a ? `<img src="${l5Icon(a.id)}" alt="">` : "";
+  let html = `<div class="lay" style="background:linear-gradient(${th.fond_haut},${th.fond_bas})"></div>`;
+  if (th.arriere_plan === "image" && th.image)
+    html += `<img class="wall" src="/api/l5/file?dir=fonds&name=${encodeURIComponent(th.image)}" alt="">`;
+  if (th.arriere_plan === "illustration" && first && th.illustration)
+    html += `<img class="art" src="${l5Icon(first.id)}" style="opacity:${th.illustration / 100}" alt="">`;
+  if (g) html += `<div class="glow" style="left:${1498 - 720}px;top:${324 - 720}px;width:1440px;height:1440px;background:radial-gradient(${l5Hex(th.couleur, .55 * g)},transparent 70%)"></div>` +
+                 `<div class="glow" style="left:${422 - 640}px;top:${918 - 640}px;width:1280px;height:1280px;background:radial-gradient(${l5Hex(th.couleur2, .45 * g)},transparent 70%)"></div>`;
+  const wall = th.arriere_plan === "image" && th.image;
+  html += `<div class="lay" style="background:linear-gradient(90deg,rgba(0,0,0,${wall ? .72 : .92}),transparent 75%)"></div>` +
+          `<div class="lay" style="background:linear-gradient(transparent 50%,rgba(0,0,0,${wall ? .8 : .95}))"></div>` +
+          `<canvas class="lay" id="l5Parts" width="1920" height="1080"></canvas>` +
+          `<div class="logo5">LAUNCHER<span style="color:${th.couleur};margin-left:4px">5</span></div>` +
+          `<div class="tabs"><span class="on">${esc(t("l5.prev.ps5"))}</span><span>${esc(t("l5.prev.ps4"))}</span><span>${esc(t("l5.prev.media"))}</span><span>Homebrews</span></div>` +
+          (th.horloge === "masquee" ? "" : `<div class="clock">${hh}<small>${now.toLocaleDateString(LANG, { weekday: "short", day: "numeric", month: "numeric" })}</small></div>`);
+  const tile = (a, x, y, w, sel, extra = "") => {
+    const shadow = sel ? `box-shadow:0 0 ${120 * g}px ${l5Hex(th.couleur, .9 * g)};` : "";
+    return `<div class="tile${sel ? " sel" : ""}" style="left:${x}px;top:${y}px;width:${w}px;height:${w}px;border-radius:${rad * w / 300}px;${shadow}${extra}">${img(a)}</div>`;
+  };
+  if (view === "flow") {
+    const sel = Math.max(0, cat.indexOf(first));
+    for (const d of [-3, 3, -2, 2, -1, 1]) {
+      const a = cat[sel + d]; if (!a) continue;
+      const k = Math.abs(d), s = Math.sign(d), cx = 960 + s * (330 + (k - 1) * 165), w = 300;
+      html += tile(a, cx - w / 2, 440 - w / 2, w, false,
+        `transform:perspective(1100px) rotateY(${-s * 48}deg) scaleX(.95);filter:brightness(${1 - .3 - (k - 1) * .07});` +
+        `-webkit-box-reflect:below 6px linear-gradient(transparent 62%,rgba(255,255,255,.28));`);
+    }
+    html += tile(first, 760, 240, 400, true, `-webkit-box-reflect:below 6px linear-gradient(transparent 65%,rgba(255,255,255,.3));`) +
+            `<div class="kind" style="left:960px;top:790px;transform:translateX(-50%)">${esc(t("l5.prev.kind"))}</div>` +
+            `<div class="title" style="left:960px;top:832px;transform:translateX(-50%);font-size:56px">${esc(title)}</div>` +
+            `<div class="meta" style="left:960px;top:914px;transform:translateX(-50%);font-weight:400;font-size:26px">${esc(t("l5.prev.meta"))}</div>`;
+  } else if (view === "grid") {
+    for (let i = 0; i < 12; i++) {
+      const sel = i === 0, w = sel ? 235 : 210, x = 230 + (i % 6) * 250 + (210 - w) / 2, y = 170 + Math.floor(i / 6) * 274 + (210 - w) / 2;
+      html += tile(cat[i], x, y, w, sel) +
+              `<div class="gname${sel ? " on" : ""}" style="left:${230 + (i % 6) * 250}px;top:${170 + Math.floor(i / 6) * 274 + 222}px">${esc(cat[i] ? l5Name(cat[i].id) : "")}</div>`;
+    }
+  } else {
+    html += `<div class="kind">${esc(t("l5.prev.kind"))}</div><div class="title">${esc(title)}</div>` +
+            `<div class="meta">${esc(t("l5.prev.meta"))}</div>` +
+            `<div class="btns"><span class="play" style="box-shadow:0 0 ${80 * g}px ${l5Hex(th.couleur, .8 * g)}">✕  ${esc(t("l5.prev.play"))}</span><span class="opt">△  OPTIONS</span></div>`;
+    let x = 110;
+    for (let i = 0; i < 6; i++) { const sel = i === 0, w = sel ? 300 : 230; html += tile(cat[i], x, 990 - w, w, sel); x += w + 30; }
+  }
+  html += `<div class="foot">✕  ${esc(t("l5.prev.foot"))}</div>`;
+  st.innerHTML = html;
+  l5Scale(); l5Particles();
+}
+function l5Scale() { const p = $("l5Prev"); $("l5Stage").style.transform = `scale(${p.clientWidth / 1920})`; }
+new ResizeObserver(l5Scale).observe($("l5Prev"));
+function l5Particles() {
+  cancelAnimationFrame(L5.anim);
+  const cv = $("l5Parts"); if (!cv) return;
+  const th = L5.theme, n = { aucune: 0, peu: 35, beaucoup: 70 }[th.particules] || 0;
+  const ctx = cv.getContext("2d");
+  const ps = Array.from({ length: n }, () => ({ x: Math.random() * 1920, y: Math.random() * 1080, s: 2 + Math.random() * 3, v: .2 + Math.random() * .6 }));
+  let f = 0;
+  const step = () => {
+    if (!$("dlgL5").open || L5.tab !== "theme" || !cv.isConnected) return;
+    ctx.clearRect(0, 0, 1920, 1080); f++;
+    ps.forEach((p, i) => {
+      const v = p.v * (th.forme_particules === "flocons" ? .7 : 1) * 1.5;
+      if (th.sens === "tombent") { p.y += v; if (p.y > 1090) { p.y = -10; p.x = Math.random() * 1920; } }
+      else { p.y -= v; if (p.y < -10) { p.y = 1090; p.x = Math.random() * 1920; } }
+      const a = (70 + 60 * Math.sin(f / 30 + i)) / 255;
+      ctx.fillStyle = l5Hex(i % 3 ? th.couleur : th.couleur2, th.forme_particules === "etincelles" ? Math.min(1, a + .15) : a);
+      if (th.forme_particules === "etincelles") { ctx.fillRect(p.x - p.s * 2, p.y, p.s * 4 + 1, 1); ctx.fillRect(p.x, p.y - p.s * 2, 1, p.s * 4 + 1); }
+      else if (th.forme_particules === "flocons") ctx.fillRect(p.x + 14 * Math.sin(f / 75 + i * 1.7), p.y, p.s * 2, p.s * 2);
+      else ctx.fillRect(p.x, p.y, p.s, p.s);
+    });
+    L5.anim = requestAnimationFrame(step);
+  };
+  if (n) step();
+}
+async function l5SendTheme(apply, saveAs) {
+  try {
+    if (saveAs) {
+      const v = prompt(t("l5.savetheme.prompt"), L5.theme.nom);
+      if (!v || !v.trim()) return;
+      L5.theme.nom = v.trim().slice(0, 46);
+    }
+    const r = await api("/api/l5/theme", { theme: L5.theme, apply, save_as: saveAs });
+    L5.theme = r.theme; l5Err("");
+    l5Ok(t(apply ? "l5.applied" : "l5.themesaved", { n: r.theme.nom }));
+    if (saveAs) await l5Load(true);
+    else l5RenderForm();
+  } catch (e) { l5Err(e.message); }
+}
+$("l5Apply").onclick = () => l5SendTheme(true, false);
+$("l5SaveTheme").onclick = () => l5SendTheme(false, true);
+function l5Download(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const l5FileName = (n) => (n.replace(/[^\p{L}\p{N}_-]+/gu, "_").replace(/^_+|_+$/g, "") || "theme") + ".json";
+$("l5Export").onclick = () => { if (L5.theme) l5Download(l5FileName(L5.theme.nom), JSON.stringify(L5.theme, null, 2)); };
+$("l5Import").onclick = () => $("l5ImportFile").click();
+$("l5ImportFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f || !L5.data) return;
+  try { L5.theme = l5CleanTheme(JSON.parse(await f.text())); l5RenderForm(); l5Err(""); }
+  catch { l5Err(t("l5.err.json")); }
+};
+
+/* --- fonds, musiques, thèmes --- */
+function l5Size(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " Mo" : Math.max(1, Math.round(n / 1024)) + " Ko"; }
+function l5RenderMedia() {
+  const W = $("l5Walls"), M = $("l5Musics"), T = $("l5Themes");
+  W.innerHTML = M.innerHTML = T.innerHTML = "";
+  if (!L5.data) return;
+  const empty = (box, key) => box.append(Object.assign(document.createElement("div"), { className: "l5-hint", textContent: t(key) }));
+  for (const f of L5.data.files.fonds) {
+    const c = document.createElement("div"); c.className = "l5-thumb";
+    c.innerHTML = `<img loading="lazy" src="/api/l5/file?dir=fonds&name=${encodeURIComponent(f.name)}" alt=""><div title="${esc(f.name)}">${esc(f.name)} · ${l5Size(f.size)}</div>`;
+    const x = l5Btn("✕", t("file.delete"), () => l5Delete("fonds", f.name)); x.className = "x";
+    c.append(x); W.append(c);
+  }
+  if (!L5.data.files.fonds.length) empty(W, "l5.walls.none");
+  for (const f of L5.data.files.musique) {
+    const r = document.createElement("div"); r.className = "l5-item";
+    const play = l5Btn("▶", t("l5.listen"), () => {
+      const a = $("l5Audio"), src = `/api/l5/file?dir=musique&name=${encodeURIComponent(f.name)}`;
+      if (a.dataset.src === src && !a.paused) { a.pause(); play.textContent = "▶"; return; }
+      document.querySelectorAll("#l5Musics button.on").forEach(b => { b.textContent = "▶"; b.classList.remove("on"); });
+      a.dataset.src = src; a.src = src; a.play().catch(() => {}); play.textContent = "⏸"; play.classList.add("on");
+      a.onended = () => { play.textContent = "▶"; play.classList.remove("on"); };
+    });
+    r.append(play, Object.assign(document.createElement("span"), { className: "n", textContent: f.name, title: f.name }),
+             Object.assign(document.createElement("small"), { textContent: l5Size(f.size) }),
+             l5Btn("✕", t("file.delete"), () => l5Delete("musique", f.name)));
+    M.append(r);
+  }
+  if (!L5.data.files.musique.length) empty(M, "l5.musics.none");
+  L5.data.user_themes.forEach((u) => {
+    const r = document.createElement("div"); r.className = "l5-item";
+    const sw = document.createElement("span");
+    sw.style.cssText = `width:22px;height:22px;border-radius:6px;flex:none;background:linear-gradient(135deg,${u.theme.couleur} 50%,${u.theme.couleur2} 50%)`;
+    r.append(sw, Object.assign(document.createElement("span"), { className: "n", textContent: u.theme.nom, title: u.file }),
+      l5Btn("✎", t("l5.edit"), () => { L5.theme = l5CleanTheme(u.theme); l5Tab("theme"); }),
+      l5Btn("⬇", t("l5.export"), () => l5Download(u.file, JSON.stringify(u.theme, null, 2))),
+      l5Btn("✕", t("file.delete"), () => l5Delete("themes", u.file)));
+    T.append(r);
+  });
+  if (!L5.data.user_themes.length) empty(T, "l5.themes.none");
+}
+async function l5Delete(dir, name) {
+  if (!confirm(t("l5.del.confirm", { f: name }))) return;
+  try { await api("/api/l5/delete", { dir, name }); await l5Load(true); } catch (e) { l5Err(e.message); }
+}
+/* Les images sont mises à la taille de l'écran (1920×1080) avant l'envoi : chargement rapide sur la PS5 */
+async function l5PrepareImage(file) {
+  const img = await createImageBitmap(file);
+  const k = Math.min(1, 1920 / img.width, 1080 / img.height);
+  const isPlain = /\.(png|jpe?g)$/i.test(file.name);
+  if (k === 1 && isPlain) return { blob: file, name: file.name };
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+  cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+  const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.9));
+  return { blob, name: file.name.replace(/\.[^.]+$/, "") + ".jpg" };
+}
+async function l5Upload(dir, files) {
+  l5Err("");
+  for (const file of files) {
+    try {
+      let blob = file, name = file.name;
+      if (dir === "fonds") ({ blob, name } = await l5PrepareImage(file));
+      if (dir === "themes") JSON.parse(await file.text());
+      $("l5Status").textContent = t("l5.uploading", { f: name });
+      const r = await fetch(`/api/l5/upload?dir=${dir}&name=${encodeURIComponent(name)}`, { method: "POST", body: blob });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.statusText);
+    } catch (e) { l5Err(`${file.name} : ${e instanceof SyntaxError ? t("l5.err.json") : e.message}`); }
+  }
+  await l5Load(true);
+}
+for (const [btn, input, dir] of [["l5AddWall", "l5WallFile", "fonds"], ["l5AddMusic", "l5MusicFile", "musique"], ["l5AddTheme", "l5ThemeFile", "themes"]]) {
+  $(btn).onclick = () => $(input).click();
+  $(input).onchange = (e) => { const fs = [...e.target.files]; e.target.value = ""; if (fs.length) l5Upload(dir, fs); };
+}
+document.querySelectorAll("#l5-media .l5-card").forEach(card => {
+  card.ondragover = (e) => { e.preventDefault(); card.classList.add("drag"); };
+  card.ondragleave = () => card.classList.remove("drag");
+  card.ondrop = (e) => { e.preventDefault(); card.classList.remove("drag"); if (e.dataTransfer.files.length) l5Upload(card.dataset.drop, [...e.dataTransfer.files]); };
+});
+
+/* --- fenêtre --- */
+function l5Tab(tab) {
+  L5.tab = tab;
+  document.querySelectorAll("#l5Tabs button").forEach(b => b.classList.toggle("on", b.dataset.l5tab === tab));
+  for (const p of ["menu", "theme", "media"]) $("l5-" + p).hidden = p !== tab;
+  if (tab === "theme") l5RenderForm();
+}
+document.querySelectorAll("#l5Tabs button").forEach(b => b.onclick = () => l5Tab(b.dataset.l5tab));
+$("btnL5").onclick = () => { $("dlgL5").showModal(); l5Tab(L5.tab); l5Load(); };
+$("l5Close").onclick = () => {
+  if (L5.dirty && !confirm(t("l5.close.confirm"))) return;
+  $("l5Audio").pause(); $("dlgL5").close();
+};
+$("dlgL5").addEventListener("cancel", (e) => { if (L5.dirty && !confirm(t("l5.close.confirm"))) e.preventDefault(); else $("l5Audio").pause(); });
+$("l5Reload").onclick = () => { if (!L5.dirty || confirm(t("l5.close.confirm"))) l5Load(); };
+$("l5Install").onclick = async () => {
+  if (!confirm(t("l5.install.confirm"))) return;
+  try { await api("/api/l5/install", {}); showTab("ps5"); l5Ok(t("l5.install.sent")); } catch (e) { l5Err(e.message); }
+};
+
+/* ---------- Changement de langue ---------- */
+$("langSel").onchange = async (e) => {
+  state.cfg = await api("/api/config", { lang: e.target.value });
+  await loadI18n(e.target.value);
+  updateButtons(); renderProblems(); loadProjects(); renderPayloads();
+  if (L5.data) { l5RenderAll(); l5Status(); l5SetDirty(L5.dirty); }
+  if (state.dbg.state === "stopped") renderVars(Object.entries(state.prevVars).map(([name, value]) => ({ name, value })));
+};
+
+/* ---------- Démarrage ---------- */
+(async () => {
+  try {
+    const w = await api("/api/watch"); state.watch = w.watch;
+    state.klog = !!w.klog;
+    $("btnSimStop").hidden = !w.sim_running;
+  } catch {}
+  await loadConfig();
+  await initLang();
+  updateButtons(); renderProblems();
+  connectEvents(); loadProjects(); pollStatus(); refreshPayloads();
+})();
+</script>
+</body>
+</html>
