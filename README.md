@@ -11,7 +11,8 @@ de payloads et gestion de [Launcher5](https://github.com/cedsaill3/Launcher5) in
 ## Fonctions
 
 ### Écrire
-- Projets créés à partir de modèles (`hello`, `demo_ps5`), ajout et suppression de fichiers
+- Nouveau projet prêt à compiler (démo : infos console, température, notification, journal noyau),
+  ajout et suppression de fichiers
 - Éditeur avec coloration syntaxique C/C++, numéros de ligne, erreurs marquées dans la marge
 - **Sauvegarde automatique**, et **rechargement automatique** si un fichier est modifié
   dans un autre éditeur (VS Code, Notepad++…)
@@ -65,20 +66,38 @@ depuis le PC (par FTP, payload `ftpsrv`) :
 Français, English, Español, Deutsch, Italiano, Português — choix en haut à droite,
 langue du navigateur détectée au premier lancement.
 
-## Installation
-1. Installe **Python 3.10 ou plus** (https://www.python.org, coche « Add to PATH »).
-2. Télécharge `Forge5-v1.0.0.zip` dans les [Releases](../../releases) et décompresse-le.
-3. Double-clique sur **`Lancer-Forge5.bat`** : Forge5 s'ouvre dans sa propre fenêtre.
-   Fermer la fenêtre arrête Forge5.
+## Prérequis
+| Pour… | Il faut |
+|---|---|
+| Lancer Forge5 | Windows 10/11, **Python 3.10+**, Chrome ou Edge (fenêtre dédiée, sinon le navigateur par défaut) |
+| Compiler pour la PS5 | **WSL (Ubuntu)** + le **SDK PS5** et ses dépendances (étapes ci-dessous) |
+| Mode sans PS5 et débogueur | WSL (Ubuntu) avec `build-essential gdb-multiarch gdbserver` |
+| Envoyer à la PS5 | PS5 jailbreakée avec un **chargeur ELF** actif (port 9021) |
+| Débogueur, journal noyau, Launcher5 | payloads `gdbsrv`, `klogsrv`, `ftpsrv` lancés sur la PS5 — Forge5 les télécharge et les envoie (bouton 📦 Payloads) |
 
-Dans ⚙ Paramètres :
-- **IP de la PS5** : clique sur **🔍 Détecter**, Forge5 trouve la console tout seul
-- **SDK** : dossier du [SDK PS5](https://github.com/ps5-payload-dev/sdk) ; s'il est installé dans
-  Ubuntu (WSL) : `/opt/ps5-payload-sdk`, commande de compilation `wsl make`, GDB `wsl gdb-multiarch`
+### Installation pas à pas
+1. **Python** : installe Python 3.10 ou plus depuis https://www.python.org/downloads/
+   (coche « Add python.exe to PATH »).
+2. **WSL** : dans un terminal Windows ouvert en administrateur, tape `wsl --install`,
+   redémarre le PC, puis ouvre « Ubuntu » et choisis un nom et un mot de passe.
+3. **Outils dans Ubuntu** :
 
-**Pour le mode sans PS5 et le débogueur** : WSL (Ubuntu), puis dans Ubuntu :
+       sudo apt update
+       sudo apt install bash clang-18 lld-18 make wget unzip build-essential gdb-multiarch gdbserver
 
-    sudo apt install build-essential gdb-multiarch gdbserver
+4. **SDK PS5** ([ps5-payload-dev/sdk](https://github.com/ps5-payload-dev/sdk)), toujours dans Ubuntu :
+
+       wget https://github.com/ps5-payload-dev/sdk/releases/latest/download/ps5-payload-sdk.zip
+       sudo unzip -d /opt ps5-payload-sdk.zip
+
+5. **Forge5** : télécharge `Forge5-v1.0.0.zip` dans les [Releases](../../releases), décompresse-le,
+   puis double-clique sur **`Lancer-Forge5.bat`**. Fermer la fenêtre arrête Forge5.
+6. **Réglages** (⚙ Paramètres) :
+   - **IP de la PS5** : bouton **🔍 Détecter**, Forge5 trouve la console tout seul
+   - **Dossier du SDK** : `/opt/ps5-payload-sdk`
+   - **Commande de compilation** : `wsl make`
+   - **GDB** : `wsl gdb-multiarch`
+   - le bouton **Vérifier les mises à jour du SDK** confirme que le SDK est bien trouvé
 
 Internet sert seulement à télécharger les payloads, Launcher5 et à vérifier les mises à jour
 du SDK. Forge5 n'écoute que sur ton PC (127.0.0.1) et refuse les requêtes venant d'autres sites.
@@ -97,6 +116,11 @@ build and run on the PS5 — or on your PC with a simulated PS5 — with live ou
 debugger, a payload manager and [Launcher5](https://github.com/cedsaill3/Launcher5) management.
 UI in French, English, Spanish, German, Italian and Portuguese.
 
-**Install:** Python 3.10+, download `Forge5-v1.0.0.zip` from [Releases](../../releases),
-unzip, double-click `Lancer-Forge5.bat`. PC mode and debugger need WSL (Ubuntu) with
-`build-essential gdb-multiarch gdbserver`.
+**Requirements:** Windows 10/11, Python 3.10+, WSL (Ubuntu) with
+`clang-18 lld-18 make wget unzip build-essential gdb-multiarch gdbserver`, the
+[PS5 payload SDK](https://github.com/ps5-payload-dev/sdk) unzipped to `/opt`, and a jailbroken PS5
+with an ELF loader on port 9021.
+
+**Install:** download `Forge5-v1.0.0.zip` from [Releases](../../releases), unzip, double-click
+`Lancer-Forge5.bat`, then in Settings: SDK `/opt/ps5-payload-sdk`, build command `wsl make`,
+GDB `wsl gdb-multiarch`.

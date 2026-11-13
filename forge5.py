@@ -802,7 +802,8 @@ class Handler(BaseHTTPRequestHandler):
                     emit("system", "Parametres enregistres.", level="ok")
                 self._json(CONFIG)
             elif path == "/api/projects":
-                create_project(data.get("name"), data.get("template", "hello"))
+                tpls = list_templates()
+                create_project(data.get("name"), data.get("template") or (tpls[0] if tpls else ""))
                 self._json({"ok": True})
             elif path.startswith("/api/file/"):
                 _, _, _, project, rel = path.split("/", 4)

@@ -458,7 +458,7 @@
 <dialog id="dlgNew">
   <h2 data-i18n="new.title"></h2>
   <div class="field"><label data-i18n="new.name"></label><input id="newName" placeholder="mon_homebrew"><small data-i18n="new.name.help"></small></div>
-  <div class="field"><label data-i18n="new.tpl"></label><select id="newTpl"></select></div>
+  <div class="field" id="newTplField"><label data-i18n="new.tpl"></label><select id="newTpl"></select></div>
   <div class="actions"><button id="newCancel" data-i18n="btn.cancel"></button><button class="primary" id="newOk" data-i18n="btn.create"></button></div>
 </dialog>
 
@@ -1062,6 +1062,7 @@ $("cfgSave").onclick = async () => {
 /* ---------- Nouveau projet ---------- */
 $("btnNew").onclick = () => {
   $("newTpl").innerHTML = state.templates.map(tpl => `<option>${esc(tpl)}</option>`).join("");
+  $("newTplField").hidden = state.templates.length < 2;   /* un seul modele : rien a choisir */
   $("newName").value = ""; $("dlgNew").showModal(); $("newName").focus();
 };
 $("newCancel").onclick = () => $("dlgNew").close();
