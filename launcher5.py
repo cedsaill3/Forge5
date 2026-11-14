@@ -156,7 +156,7 @@ def clean_menu(m):
            "favorites": [str(f)[:39] for f in m.get("favorites", []) if isinstance(f, str)],
            "saver": m["saver"] if isinstance(m.get("saver"), int) and 0 <= m["saver"] <= 120 else 5,
            "sfx_pack": m["sfx_pack"] if isinstance(m.get("sfx_pack"), int) and 0 <= m["sfx_pack"] < 5 else 0,
-           "boot_sound": m["boot_sound"] if isinstance(m.get("boot_sound"), int) and 0 <= m["boot_sound"] < 7 else 0,
+           "boot_sound": m["boot_sound"] if isinstance(m.get("boot_sound"), int) and 0 <= m["boot_sound"] < 6 else 0,
            "hide_ip": bool(m.get("hide_ip")),
            "boxes": m.get("boxes") is not False,
            "covers_online": m.get("covers_online") is not False,
