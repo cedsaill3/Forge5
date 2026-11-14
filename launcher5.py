@@ -31,6 +31,7 @@ BUILTIN = [
     # nom, couleur, couleur2, haut, bas, arriere-plan, illustration, halos, particules, forme, sens, coins,
     # effet anime, couleurs selon le jeu, fond fourni (memes valeurs que launcher/src/theme.c)
     ("Launcher5", "#ff4d1a", "#00a33a", "#100503", "#2e0b05", "image", 60, 100, "aucune", "etincelles", "montent", "tres_arrondis", "hyperespace", True, "launcher5-03.jpg"),
+    ("Loader GX", "#2fb5ea", "#c4c9d1", "#000000", "#1d1f24", "degrade", 0, 55, "aucune", "points", "montent", "arrondis", "aucun", False, ""),
     ("Launcher5 Néon", "#00e5ff", "#ff2bd6", "#05081a", "#170a33", "image", 45, 80, "peu", "points", "montent", "arrondis", "aucun", False, "launcher5-02.jpg"),
     ("Néon", "#00e5ff", "#ff2bd6", "#05081a", "#170a33", "illustration", 45, 100, "peu", "points", "montent", "arrondis", "aucun", False, ""),
     ("Glitch", "#ff00c8", "#00fff0", "#07000f", "#14002a", "illustration", 40, 100, "beaucoup", "etincelles", "montent", "droits", "hyperespace", False, ""),
@@ -61,7 +62,7 @@ CHOICES = {
     "coins": ("droits", "arrondis", "tres_arrondis"),
     "horloge": ("24h", "12h", "masquee"),
     "effet": ("aucun", "grille", "hyperespace", "pluie"),
-    "boitier": ("bleu", "noir", "cristal", "steelbook", "couleur", "aucun"),
+    "boitier": ("bleu", "noir", "blanc", "cristal", "steelbook", "couleur", "images", "aucun"),
 }
 
 
@@ -71,7 +72,8 @@ def builtin_themes():
         out.append({"nom": n, "couleur": c, "couleur2": c2, "fond_haut": top, "fond_bas": bot,
                     "arriere_plan": bg, "image": img, "illustration": art, "halos": glow, "particules": part,
                     "forme_particules": form, "sens": sens, "coins": corners, "horloge": "24h",
-                    "musique": "", "volume": 60, "effet": fx, "couleur_auto": auto, "sons": 60})
+                    "musique": "", "volume": 60, "effet": fx, "couleur_auto": auto, "sons": 60,
+                    "boitier": "images"})
     return out
 
 
