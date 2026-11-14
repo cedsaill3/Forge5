@@ -159,6 +159,8 @@ def clean_menu(m):
            "boot_sound": m["boot_sound"] if isinstance(m.get("boot_sound"), int) and 0 <= m["boot_sound"] < 6 else 0,
            "hide_ip": bool(m.get("hide_ip")),
            "boxes": m.get("boxes") is not False,
+           "covers_online": m.get("covers_online") is not False,
+           "auto_update": m.get("auto_update") is not False,
            "stats": {str(k)[:39]: {"n": int(v.get("n") or 0), "last": int(v.get("last") or 0), "t": int(v.get("t") or 0)}
                      for k, v in (m.get("stats") or {}).items()
                      if isinstance(v, dict) and all(isinstance(v.get(x, 0), int) for x in ("n", "last", "t"))}
