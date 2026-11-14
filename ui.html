@@ -1443,7 +1443,8 @@ const L5_GROUPS = [
                ["effet", "chips", ["aucun", "grille", "hyperespace", "pluie"]]]],
   ["l5.g.fx", [["halos", "range"], ["particules", "chips", ["aucune", "peu", "beaucoup"]],
                ["forme_particules", "chips", ["points", "etincelles", "flocons"]], ["sens", "chips", ["montent", "tombent"]],
-               ["coins", "chips", ["droits", "arrondis", "tres_arrondis"]]]],
+               ["coins", "chips", ["droits", "arrondis", "tres_arrondis"]],
+               ["boitier", "chips", ["bleu", "noir", "cristal", "steelbook", "couleur", "aucun"]]]],
   ["l5.g.ui", [["horloge", "chips", ["24h", "12h", "masquee"]], ["sons", "range"], ["musique", "music"], ["volume", "range"]]],
 ];
 const L5_HEX = /^#[0-9a-f]{6}$/i;
@@ -1459,6 +1460,7 @@ function l5CleanTheme(src) {
     for (const k of ["illustration", "halos", "volume", "sons"]) { const n = parseInt(src[k], 10); if (!isNaN(n)) out[k] = Math.max(0, Math.min(100, n)); }
     out.couleur_auto = src.couleur_auto === true;
     if (out.sons === undefined) out.sons = 60;
+    if (!out.boitier) out.boitier = "bleu";
     out.image = String(src.image || "").split("/").pop().slice(0, 120);
     const m = String(src.musique || "");
     out.musique = m === "*" ? "*" : m.split("/").pop().slice(0, 120);

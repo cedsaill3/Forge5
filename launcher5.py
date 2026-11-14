@@ -61,6 +61,7 @@ CHOICES = {
     "coins": ("droits", "arrondis", "tres_arrondis"),
     "horloge": ("24h", "12h", "masquee"),
     "effet": ("aucun", "grille", "hyperespace", "pluie"),
+    "boitier": ("bleu", "noir", "cristal", "steelbook", "couleur", "aucun"),
 }
 
 
@@ -119,7 +120,7 @@ def clean_theme(t):
     # ordre identique a celui du launcher
     order = ["nom", "couleur", "couleur2", "fond_haut", "fond_bas", "arriere_plan", "image", "illustration", "halos",
              "particules", "forme_particules", "sens", "coins", "horloge", "musique", "volume",
-             "effet", "couleur_auto", "sons"]
+             "effet", "couleur_auto", "sons", "boitier"]
     return {k: out[k] for k in order}
 
 
