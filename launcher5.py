@@ -18,7 +18,8 @@ from pathlib import Path
 DATA = "/data/launcher5"
 DIRS = {"fonds": ("png", "jpg", "jpeg", "webp", "bmp"),
         "musique": ("ogg", "mp3", "flac", "wav", "mod", "xm", "it", "s3m"),
-        "themes": ("json",)}
+        "themes": ("json",),
+        "jaquettes": ("jpg", "png")}   # jaquettes perso : <ID du jeu>.jpg ou .png
 MAX_UPLOAD = 80 * 1024 * 1024
 # Version compilee a cote (dossier launcher/ voisin) si elle existe, sinon la derniere
 # version publiee de Launcher5, telechargee a chaque installation.
@@ -27,24 +28,30 @@ LAUNCHER_URL = "https://github.com/cedsaill3/Launcher5/releases/latest/download/
 
 # Themes fournis avec le launcher (memes valeurs que launcher/src/theme.c)
 BUILTIN = [
-    # nom, couleur, couleur2, haut, bas, arriere-plan, illustration, halos, particules, forme, sens, coins
-    ("Néon", "#00e5ff", "#ff2bd6", "#05081a", "#170a33", "illustration", 45, 100, "peu", "points", "montent", "arrondis"),
-    ("Glitch", "#ff00c8", "#00fff0", "#07000f", "#14002a", "illustration", 40, 100, "beaucoup", "etincelles", "montent", "droits"),
-    ("Acid", "#c6ff00", "#ff2bd6", "#050805", "#101a05", "illustration", 40, 100, "peu", "etincelles", "montent", "droits"),
-    ("Blood", "#ff1f3d", "#8a0012", "#0a0000", "#220005", "illustration", 50, 90, "peu", "points", "tombent", "droits"),
-    ("Terminal", "#33ff66", "#00a33a", "#000000", "#000a03", "degrade", 20, 50, "beaucoup", "points", "tombent", "droits"),
-    ("Cyberpunk", "#fcee0a", "#00f0ff", "#08080d", "#1d1608", "illustration", 45, 100, "peu", "etincelles", "montent", "droits"),
-    ("Synthwave", "#ff3cac", "#2b86c5", "#0d0221", "#2d0b3f", "degrade", 30, 100, "beaucoup", "etincelles", "montent", "arrondis"),
-    ("Inferno", "#ff4d1a", "#ffb300", "#100503", "#2e0b05", "illustration", 50, 100, "beaucoup", "etincelles", "montent", "arrondis"),
-    ("Toxic", "#39ff14", "#00ffa3", "#030d06", "#0a2214", "illustration", 45, 90, "peu", "points", "montent", "arrondis"),
-    ("Matrix", "#00ff41", "#008f11", "#000000", "#001a07", "degrade", 20, 60, "beaucoup", "points", "tombent", "droits"),
-    ("Royal", "#b26bff", "#ffd166", "#0b0517", "#221038", "illustration", 45, 100, "peu", "points", "montent", "tres_arrondis"),
-    ("Glace", "#7fdbff", "#e8f7ff", "#05101a", "#10293d", "illustration", 45, 80, "beaucoup", "flocons", "tombent", "tres_arrondis"),
-    ("Sakura", "#ff8fb8", "#ffd1e0", "#1a0710", "#3a1424", "illustration", 40, 80, "beaucoup", "flocons", "tombent", "tres_arrondis"),
-    ("Océan", "#00b4d8", "#48cae4", "#020c1b", "#03254a", "illustration", 50, 80, "peu", "flocons", "montent", "arrondis"),
-    ("Noir et or", "#d4af37", "#fff1c1", "#050505", "#15120a", "illustration", 35, 60, "peu", "etincelles", "montent", "droits"),
-    ("Minuit", "#c9d1dc", "#5b6b82", "#06080c", "#10141c", "illustration", 55, 30, "aucune", "points", "montent", "arrondis"),
-    ("Cinéma", "#e50914", "#ffffff", "#000000", "#0b0b0b", "illustration", 75, 40, "aucune", "points", "montent", "arrondis"),
+    # nom, couleur, couleur2, haut, bas, arriere-plan, illustration, halos, particules, forme, sens, coins,
+    # effet anime, couleurs selon le jeu, fond fourni (memes valeurs que launcher/src/theme.c)
+    ("Launcher5", "#ff4d1a", "#00a33a", "#100503", "#2e0b05", "image", 60, 100, "aucune", "etincelles", "montent", "tres_arrondis", "hyperespace", True, "launcher5-03.jpg"),
+    ("Launcher5 Néon", "#00e5ff", "#ff2bd6", "#05081a", "#170a33", "image", 45, 80, "peu", "points", "montent", "arrondis", "aucun", False, "launcher5-02.jpg"),
+    ("Néon", "#00e5ff", "#ff2bd6", "#05081a", "#170a33", "illustration", 45, 100, "peu", "points", "montent", "arrondis", "aucun", False, ""),
+    ("Glitch", "#ff00c8", "#00fff0", "#07000f", "#14002a", "illustration", 40, 100, "beaucoup", "etincelles", "montent", "droits", "hyperespace", False, ""),
+    ("Acid", "#c6ff00", "#ff2bd6", "#050805", "#101a05", "illustration", 40, 100, "peu", "etincelles", "montent", "droits", "aucun", False, ""),
+    ("Blood", "#ff1f3d", "#8a0012", "#0a0000", "#220005", "illustration", 50, 90, "peu", "points", "tombent", "droits", "aucun", False, ""),
+    ("Terminal", "#33ff66", "#00a33a", "#000000", "#000a03", "degrade", 20, 50, "beaucoup", "points", "tombent", "droits", "pluie", False, ""),
+    ("Outrun", "#ff2bd6", "#00e5ff", "#0d0221", "#2a0845", "degrade", 30, 100, "peu", "etincelles", "montent", "arrondis", "grille", False, ""),
+    ("Hyperdrive", "#7fdbff", "#b26bff", "#000000", "#05081a", "illustration", 35, 90, "aucune", "points", "montent", "arrondis", "hyperespace", False, ""),
+    ("Caméléon", "#00e5ff", "#ff2bd6", "#05060a", "#10121a", "illustration", 60, 100, "peu", "points", "montent", "tres_arrondis", "aucun", True, ""),
+    ("Cyberpunk", "#fcee0a", "#00f0ff", "#08080d", "#1d1608", "illustration", 45, 100, "peu", "etincelles", "montent", "droits", "grille", False, ""),
+    ("Synthwave", "#ff3cac", "#2b86c5", "#0d0221", "#2d0b3f", "degrade", 30, 100, "beaucoup", "etincelles", "montent", "arrondis", "grille", False, ""),
+    ("Inferno", "#ff4d1a", "#ffb300", "#100503", "#2e0b05", "illustration", 50, 100, "beaucoup", "etincelles", "montent", "arrondis", "aucun", False, ""),
+    ("Toxic", "#39ff14", "#00ffa3", "#030d06", "#0a2214", "illustration", 45, 90, "peu", "points", "montent", "arrondis", "aucun", False, ""),
+    ("Matrix", "#00ff41", "#008f11", "#000000", "#001a07", "degrade", 20, 60, "beaucoup", "points", "tombent", "droits", "pluie", False, ""),
+    ("Royal", "#b26bff", "#ffd166", "#0b0517", "#221038", "illustration", 45, 100, "peu", "points", "montent", "tres_arrondis", "aucun", False, ""),
+    ("Glace", "#7fdbff", "#e8f7ff", "#05101a", "#10293d", "illustration", 45, 80, "beaucoup", "flocons", "tombent", "tres_arrondis", "aucun", False, ""),
+    ("Sakura", "#ff8fb8", "#ffd1e0", "#1a0710", "#3a1424", "illustration", 40, 80, "beaucoup", "flocons", "tombent", "tres_arrondis", "aucun", False, ""),
+    ("Océan", "#00b4d8", "#48cae4", "#020c1b", "#03254a", "illustration", 50, 80, "peu", "flocons", "montent", "arrondis", "aucun", False, ""),
+    ("Noir et or", "#d4af37", "#fff1c1", "#050505", "#15120a", "illustration", 35, 60, "peu", "etincelles", "montent", "droits", "aucun", False, ""),
+    ("Minuit", "#c9d1dc", "#5b6b82", "#06080c", "#10141c", "illustration", 55, 30, "aucune", "points", "montent", "arrondis", "aucun", False, ""),
+    ("Cinéma", "#e50914", "#ffffff", "#000000", "#0b0b0b", "illustration", 75, 40, "aucune", "points", "montent", "arrondis", "aucun", False, ""),
 ]
 CHOICES = {
     "arriere_plan": ("illustration", "degrade", "image"),
@@ -53,17 +60,26 @@ CHOICES = {
     "sens": ("montent", "tombent"),
     "coins": ("droits", "arrondis", "tres_arrondis"),
     "horloge": ("24h", "12h", "masquee"),
+    "effet": ("aucun", "grille", "hyperespace", "pluie"),
 }
 
 
 def builtin_themes():
     out = []
-    for n, c, c2, top, bot, bg, art, glow, part, form, sens, corners in BUILTIN:
+    for n, c, c2, top, bot, bg, art, glow, part, form, sens, corners, fx, auto, img in BUILTIN:
         out.append({"nom": n, "couleur": c, "couleur2": c2, "fond_haut": top, "fond_bas": bot,
-                    "arriere_plan": bg, "image": "", "illustration": art, "halos": glow, "particules": part,
+                    "arriere_plan": bg, "image": img, "illustration": art, "halos": glow, "particules": part,
                     "forme_particules": form, "sens": sens, "coins": corners, "horloge": "24h",
-                    "musique": "", "volume": 60})
+                    "musique": "", "volume": 60, "effet": fx, "couleur_auto": auto, "sons": 60})
     return out
+
+
+def cover_name(app_id):
+    """Nom de fichier d'une jaquette perso (meme regle que le launcher)."""
+    app_id = str(app_id or "")[:39]
+    if not app_id:
+        raise ValueError("Jeu inconnu.")
+    return re.sub(r"[^A-Za-z0-9-]", "_", app_id)
 
 
 def safe_name(name, kind):
@@ -91,17 +107,19 @@ def clean_theme(t):
     for k, allowed in CHOICES.items():
         v = str(t.get(k, base.get(k, allowed[0])))
         out[k] = v if v in allowed else allowed[0]
-    for k in ("illustration", "halos", "volume"):
+    for k in ("illustration", "halos", "volume", "sons"):
         try:
             out[k] = max(0, min(100, int(t.get(k, base[k]))))
         except (TypeError, ValueError):
-            out[k] = base[k]
+            out[k] = base.get(k, 60)
     out["image"] = str(t.get("image") or "").split("/")[-1][:120]
+    out["couleur_auto"] = t.get("couleur_auto") is True
     m = str(t.get("musique") or "")
     out["musique"] = m if m == "*" else m.split("/")[-1][:120]
     # ordre identique a celui du launcher
     order = ["nom", "couleur", "couleur2", "fond_haut", "fond_bas", "arriere_plan", "image", "illustration", "halos",
-             "particules", "forme_particules", "sens", "coins", "horloge", "musique", "volume"]
+             "particules", "forme_particules", "sens", "coins", "horloge", "musique", "volume",
+             "effet", "couleur_auto", "sons"]
     return {k: out[k] for k in order}
 
 
@@ -135,9 +153,15 @@ def clean_menu(m):
            "root": nodes(m["root"], 0),
            "hidden": [str(h)[:39] for h in m.get("hidden", []) if isinstance(h, str)],
            "names": {str(k)[:39]: str(v)[:95] for k, v in (m.get("names") or {}).items() if str(v).strip()},
-           "stats": {str(k)[:39]: {"n": int(v.get("n") or 0), "last": int(v.get("last") or 0)}
+           "favorites": [str(f)[:39] for f in m.get("favorites", []) if isinstance(f, str)],
+           "saver": m["saver"] if isinstance(m.get("saver"), int) and 0 <= m["saver"] <= 120 else 5,
+           "sfx_pack": m["sfx_pack"] if isinstance(m.get("sfx_pack"), int) and 0 <= m["sfx_pack"] < 5 else 0,
+           "boot_sound": m["boot_sound"] if isinstance(m.get("boot_sound"), int) and 0 <= m["boot_sound"] < 6 else 0,
+           "hide_ip": bool(m.get("hide_ip")),
+           "boxes": m.get("boxes") is not False,
+           "stats": {str(k)[:39]: {"n": int(v.get("n") or 0), "last": int(v.get("last") or 0), "t": int(v.get("t") or 0)}
                      for k, v in (m.get("stats") or {}).items()
-                     if isinstance(v, dict) and isinstance(v.get("n", 0), int) and isinstance(v.get("last", 0), int)}
+                     if isinstance(v, dict) and all(isinstance(v.get(x, 0), int) for x in ("n", "last", "t"))}
                      if isinstance(m.get("stats"), dict) else {}}
     return out
 
@@ -273,6 +297,35 @@ class Launcher5:
                 f.quit()
         self.emit("ps5", f"✔ {name} envoyé dans {kind}/ ({len(data) // 1024} Ko).", level="ok")
         return name
+
+    # -- jaquettes perso (prioritaires sur celles fabriquees par le launcher) --
+    def set_cover(self, app_id, data, ext):
+        base = cover_name(app_id)
+        self.upload("jaquettes", f"{base}.{ext}", data)
+        other = "png" if ext == "jpg" else "jpg"
+        with self.lock:
+            f = self._ftp()
+            try:
+                try:
+                    f.delete(f"{DATA}/jaquettes/{base}.{other}")   # l'autre format passerait avant
+                except ftplib.all_errors:
+                    pass
+            finally:
+                f.quit()
+
+    def remove_cover(self, app_id):
+        base = cover_name(app_id)
+        with self.lock:
+            f = self._ftp()
+            try:
+                for ext in ("jpg", "png"):
+                    try:
+                        f.delete(f"{DATA}/jaquettes/{base}.{ext}")
+                    except ftplib.all_errors:
+                        pass
+            finally:
+                f.quit()
+        self.emit("ps5", "✔ Jaquette perso retirée : le launcher refait la sienne.", level="ok")
 
     def delete(self, kind, name):
         name = safe_name(name, kind)

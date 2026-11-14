@@ -31,6 +31,7 @@ from simulator import Simulator
 import i18n
 from payloads import PayloadManager
 from launcher5 import Launcher5
+from sgdb import SteamGridDB
 
 VERSION = "1.0.0"
 ROOT = Path(__file__).resolve().parent
@@ -50,6 +51,7 @@ DEFAULT_CONFIG = {
     # Mode sans PS5 (simulation sur PC, via WSL sous Windows)
     "target": "ps5",            # "ps5" ou "pc"
     "lang": "",                 # langue de l'interface ("" = celle du navigateur)
+    "steamgriddb_key": "",      # cle d'API SteamGridDB (jaquettes), reste sur ce PC
     "payloads_auto_update": True,  # mise a jour automatique des payloads
     "sim_cc": "wsl gcc",
     "sim_cxx": "wsl g++",
@@ -403,6 +405,7 @@ class Klog:
 KLOG = Klog()
 DBG = Debugger(lambda ch, text="", **kw: emit(ch, text, **kw), lambda: CONFIG)
 L5 = Launcher5(CONFIG, lambda ch, text="", **kw: emit(ch, text, **kw))
+SGDB = SteamGridDB(lambda: CONFIG.get("steamgriddb_key", ""))
 PAYLOADS = PayloadManager(lambda ch, text="", **kw: emit(ch, text, **kw), lambda: CONFIG)
 SIM = Simulator(lambda ch, text="", **kw: emit(ch, text, **kw), lambda: CONFIG,
                 lambda project, argv, cwd, env=None: stream_command(project, argv, cwd, env))
@@ -731,6 +734,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"state": DBG.state, "project": DBG.project})
             elif path == "/api/status":
                 self._json(console_status())
+            elif path == "/api/sgdb/search":
+                q = parse_qs(urlparse(self.path).query)
+                self._json({"games": SGDB.search(q.get("q", [""])[0])})
+            elif path == "/api/sgdb/covers":
+                q = parse_qs(urlparse(self.path).query)
+                self._json({"covers": SGDB.covers(q.get("id", ["0"])[0])})
             elif path == "/api/l5/state":
                 self._json(L5.state())
             elif path in ("/api/l5/icon", "/api/l5/file"):
@@ -864,6 +873,13 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/l5/theme":
                 self._json(L5.save_theme(data.get("theme"), apply=bool(data.get("apply", True)),
                                          save_as=bool(data.get("save_as"))))
+            elif path == "/api/sgdb/apply":
+                img, ext = SGDB.download(data.get("url"))
+                L5.set_cover(data.get("app"), img, ext)
+                self._json({"ok": True})
+            elif path == "/api/l5/cover/remove":
+                L5.remove_cover(data.get("app"))
+                self._json({"ok": True})
             elif path == "/api/l5/delete":
                 L5.delete(data.get("dir"), data.get("name"))
                 self._json({"ok": True})

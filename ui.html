@@ -205,6 +205,29 @@
     aside { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--line); }
   }
   /* ---------- Launcher5 ---------- */
+  #dlgCover { width: min(1100px, 96vw); height: min(820px, 94vh); padding: 0; display: none; }
+  #dlgCover[open] { display: flex; flex-direction: column; }
+  .cv-head { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .cv-head h2 { margin: 0; font-size: 17px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cv-body { display: flex; flex: 1; min-height: 0; }
+  .cv-side { width: 230px; flex: none; padding: 16px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .cv-now { width: 100%; aspect-ratio: 2 / 3; border-radius: 10px; border: 1px solid var(--line); background: var(--bg) center / cover no-repeat;
+            display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; color: var(--muted); padding: 10px; }
+  .cv-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 14px 16px; gap: 10px; }
+  .cv-search { display: flex; gap: 8px; }
+  .cv-search input { flex: 1; }
+  .cv-games { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cv-games button { font-size: 12px; padding: 4px 10px; border-radius: 99px; }
+  .cv-games button.on { background: var(--accent); color: #05070b; border-color: var(--accent); }
+  .cv-grid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; align-content: start; }
+  .cv-grid button { padding: 0; border-radius: 8px; overflow: hidden; border: 2px solid transparent; background: var(--bg); aspect-ratio: 2 / 3; }
+  .cv-grid button:hover { border-color: var(--accent); }
+  .cv-grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cv-key { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .cv-key div { display: flex; gap: 8px; }
+  .cv-key input { flex: 1; }
+  .cv-msg { font-size: 12.5px; color: var(--muted); min-height: 1.2em; }
+  .cv-msg.err { color: #ff6b81; }
   #dlgL5 { width: min(1280px, 97vw); height: min(860px, 94vh); padding: 0; display: none; }
   #dlgL5[open] { display: flex; flex-direction: column; }
   .l5-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -309,6 +332,8 @@
   .stage .tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .stage .tile.sel { outline: 4px solid #fff; }
   .stage .foot { left: 110px; top: 1024px; font-size: 22px; line-height: 1; color: #9aa4b5; }
+  .stage .sun { left: 710px; top: 310px; width: 500px; height: 290px; border-radius: 250px 250px 0 0; opacity: .6;
+    -webkit-mask: repeating-linear-gradient(#000 0 22px, transparent 22px 28px); }
   .stage .gname { width: 210px; text-align: center; font-size: 22px; color: #9aa4b5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stage .gname.on { color: #fff; font-size: 26px; }
   .l5-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -460,6 +485,30 @@
   <div class="field"><label data-i18n="new.name"></label><input id="newName" placeholder="mon_homebrew"><small data-i18n="new.name.help"></small></div>
   <div class="field" id="newTplField"><label data-i18n="new.tpl"></label><select id="newTpl"></select></div>
   <div class="actions"><button id="newCancel" data-i18n="btn.cancel"></button><button class="primary" id="newOk" data-i18n="btn.create"></button></div>
+</dialog>
+
+<dialog id="dlgCover">
+  <div class="cv-head"><h2 id="cvTitle"></h2><button id="cvClose" data-i18n="pl.close"></button></div>
+  <div class="cv-body">
+    <div class="cv-side">
+      <div class="cv-now" id="cvNow"></div>
+      <button id="cvPc" data-i18n="cv.frompc"></button>
+      <input type="file" id="cvFile" accept="image/png,image/jpeg,image/webp" hidden>
+      <button id="cvRemove" data-i18n="cv.remove"></button>
+      <small class="muted" data-i18n="cv.help"></small>
+    </div>
+    <div class="cv-main">
+      <div class="cv-key" id="cvKey" hidden>
+        <b data-i18n="cv.key.title"></b>
+        <small class="muted"><span data-i18n="cv.key.help"></span> <a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">steamgriddb.com</a></small>
+        <div><input id="cvKeyIn" type="password" autocomplete="off" spellcheck="false"><button class="primary" id="cvKeySave" data-i18n="btn.save"></button></div>
+      </div>
+      <div class="cv-search"><input id="cvQ" spellcheck="false"><button class="primary" id="cvGo" data-i18n="cv.search"></button><button id="cvKeyBtn" data-i18n-title="cv.key.change">🔑</button></div>
+      <div class="cv-games" id="cvGames"></div>
+      <div class="cv-msg" id="cvMsg"></div>
+      <div class="cv-grid" id="cvGrid"></div>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="dlgL5">
@@ -1309,7 +1358,9 @@ function l5RenderList(arr, q) {
         if (hid) L5.menu.hidden = L5.menu.hidden.filter(x => x !== node.app); else L5.menu.hidden.push(node.app);
         l5SetDirty(true); l5RenderTree();
       });
-      tools.append(rn, hd);
+      const cvb = l5Btn("🖼", t("cv.button"), () => cvOpen(node.app));
+      if (l5CoverFile(node.app)) cvb.classList.add("on");
+      tools.append(cvb, rn, hd);
       if (hid) { const b = document.createElement("span"); b.className = "l5-kind"; b.textContent = t("l5.hidden"); g.append(b); }
       row.append(sp, img, g, k, tools);
       n.ondblclick = rn.onclick;
@@ -1387,12 +1438,13 @@ const L5_SWATCH = {   /* mêmes couleurs que le nuancier du launcher sur la TV *
          "#0a0000", "#220005", "#1a0710", "#3a1424", "#100503", "#2e0b05", "#050805", "#101a05", "#000a03", "#0a2214"],
 };
 const L5_GROUPS = [
-  ["l5.g.colors", [["couleur", "color", "acc"], ["couleur2", "color", "acc"], ["fond_haut", "color", "dark"], ["fond_bas", "color", "dark"]]],
-  ["l5.g.bg", [["arriere_plan", "chips", ["illustration", "degrade", "image"]], ["image", "images"], ["illustration", "range"]]],
+  ["l5.g.colors", [["couleur_auto", "bool"], ["couleur", "color", "acc"], ["couleur2", "color", "acc"], ["fond_haut", "color", "dark"], ["fond_bas", "color", "dark"]]],
+  ["l5.g.bg", [["arriere_plan", "chips", ["illustration", "degrade", "image"]], ["image", "images"], ["illustration", "range"],
+               ["effet", "chips", ["aucun", "grille", "hyperespace", "pluie"]]]],
   ["l5.g.fx", [["halos", "range"], ["particules", "chips", ["aucune", "peu", "beaucoup"]],
                ["forme_particules", "chips", ["points", "etincelles", "flocons"]], ["sens", "chips", ["montent", "tombent"]],
                ["coins", "chips", ["droits", "arrondis", "tres_arrondis"]]]],
-  ["l5.g.ui", [["horloge", "chips", ["24h", "12h", "masquee"]], ["musique", "music"], ["volume", "range"]]],
+  ["l5.g.ui", [["horloge", "chips", ["24h", "12h", "masquee"]], ["sons", "range"], ["musique", "music"], ["volume", "range"]]],
 ];
 const L5_HEX = /^#[0-9a-f]{6}$/i;
 /* valeurs sûres (thème importé ou abîmé) : comme le serveur et le launcher */
@@ -1404,7 +1456,9 @@ function l5CleanTheme(src) {
     for (const k of ["couleur", "couleur2", "fond_haut", "fond_bas"]) if (L5_HEX.test(src[k] || "")) out[k] = src[k].toLowerCase();
     for (const [, fields] of L5_GROUPS) for (const [k, type, opts] of fields)
       if (type === "chips" && opts.includes(src[k])) out[k] = src[k];
-    for (const k of ["illustration", "halos", "volume"]) { const n = parseInt(src[k], 10); if (!isNaN(n)) out[k] = Math.max(0, Math.min(100, n)); }
+    for (const k of ["illustration", "halos", "volume", "sons"]) { const n = parseInt(src[k], 10); if (!isNaN(n)) out[k] = Math.max(0, Math.min(100, n)); }
+    out.couleur_auto = src.couleur_auto === true;
+    if (out.sons === undefined) out.sons = 60;
     out.image = String(src.image || "").split("/").pop().slice(0, 120);
     const m = String(src.musique || "");
     out.musique = m === "*" ? "*" : m.split("/").pop().slice(0, 120);
@@ -1441,7 +1495,7 @@ function l5RenderGallery() {
     if (mine) c.append(l5El("span", "mine", "★"));
     c.title = src.nom;
     c.onclick = () => {
-      const keep = { image: th.image, musique: th.musique, volume: th.volume };
+      const keep = { image: src.image || th.image, musique: th.musique, volume: th.volume };
       L5.theme = l5CleanTheme({ ...src, ...(mine ? {} : keep) });
       l5ThemeChanged(true);
     };
@@ -1483,6 +1537,14 @@ function l5RenderForm() {
         sw.append(pick);
         row.append(sw);
         if (key === "couleur") $("l5Studio").style.setProperty("--acc", th.couleur);
+      } else if (type === "bool") {
+        const ch = l5El("div", "l5-chips");
+        for (const o of [false, true]) {
+          const b = l5El("button", o === !!th[key] ? "on" : "", t(`l5.v.${key}.${o ? 1 : 0}`));
+          b.onclick = () => set(o, true);
+          ch.append(b);
+        }
+        row.append(ch);
       } else if (type === "chips") {
         const ch = l5El("div", "l5-chips");
         for (const o of opts) {
@@ -1541,6 +1603,9 @@ function l5RenderPreview() {
   const wall = th.arriere_plan === "image" && th.image;
   html += `<div class="lay" style="background:linear-gradient(90deg,rgba(0,0,0,${wall ? .72 : .92}),transparent 75%)"></div>` +
           `<div class="lay" style="background:linear-gradient(transparent 50%,rgba(0,0,0,${wall ? .8 : .95}))"></div>` +
+          (th.effet === "grille" ? `<div class="sun" style="background:linear-gradient(${th.couleur},${th.couleur2})"></div>` +
+             `<div class="lay" style="top:600px;background:repeating-linear-gradient(${l5Hex(th.couleur, .45)} 0 2px,transparent 2px 46px),` +
+             `repeating-linear-gradient(90deg,${l5Hex(th.couleur, .3)} 0 2px,transparent 2px 120px);transform:perspective(500px) rotateX(55deg);transform-origin:top"></div>` : "") +
           `<canvas class="lay" id="l5Parts" width="1920" height="1080"></canvas>` +
           `<div class="logo5">LAUNCHER<span style="color:${th.couleur};margin-left:4px">5</span></div>` +
           `<div class="tabs"><span class="on">${esc(t("l5.prev.ps5"))}</span><span>${esc(t("l5.prev.ps4"))}</span><span>${esc(t("l5.prev.media"))}</span><span>Homebrews</span></div>` +
@@ -1586,11 +1651,33 @@ function l5Particles() {
   const cv = $("l5Parts"); if (!cv) return;
   const th = L5.theme, n = { aucune: 0, peu: 35, beaucoup: 70 }[th.particules] || 0;
   const ctx = cv.getContext("2d");
+  const stars = th.effet === "hyperespace" ? Array.from({ length: 120 }, () => ({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() })) : [];
+  const drops = th.effet === "pluie" ? Array.from({ length: 48 }, () => ({ y: -Math.random() * 1080, v: 3 + Math.random() * 6, len: 8 + Math.random() * 14 | 0 })) : [];
+  const CH = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const ps = Array.from({ length: n }, () => ({ x: Math.random() * 1920, y: Math.random() * 1080, s: 2 + Math.random() * 3, v: .2 + Math.random() * .6 }));
   let f = 0;
   const step = () => {
     if (!$("dlgL5").open || L5.tab !== "theme" || !cv.isConnected) return;
     ctx.clearRect(0, 0, 1920, 1080); f++;
+    for (const s of stars) {
+      s.z -= 0.006 * (0.5 + s.z);
+      if (s.z <= 0.02) { s.x = Math.random() * 2 - 1; s.y = Math.random() * 2 - 1; s.z = 1; }
+      const sx = 960 + s.x / s.z * 960, sy = 540 + s.y / s.z * 540;
+      ctx.strokeStyle = l5Hex("#ffffff", Math.min(1, 1.15 - s.z)); ctx.lineWidth = s.z < .5 ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(sx - (sx - 960) * .06, sy - (sy - 540) * .06); ctx.lineTo(sx, sy); ctx.stroke();
+    }
+    if (drops.length) {
+      ctx.font = "22px monospace"; ctx.textAlign = "center";
+      drops.forEach((d, c) => {
+        d.y += d.v; if (d.y - d.len * 26 > 1080) { d.y = -Math.random() * 400; d.v = 3 + Math.random() * 6; }
+        const head = d.y / 26 | 0;
+        for (let k = 0; k < d.len; k++) {
+          const y = (head - k) * 26; if (y < 0 || y > 1080) continue;
+          ctx.fillStyle = k ? l5Hex(th.couleur, .37 * (d.len - k) / d.len) : "rgba(255,255,255,.6)";
+          ctx.fillText(CH[(c * 7 + head - k) % 36], c * 40 + 20, y);
+        }
+      });
+    }
     ps.forEach((p, i) => {
       const v = p.v * (th.forme_particules === "flocons" ? .7 : 1) * 1.5;
       if (th.sens === "tombent") { p.y += v; if (p.y > 1090) { p.y = -10; p.x = Math.random() * 1920; } }
@@ -1603,7 +1690,7 @@ function l5Particles() {
     });
     L5.anim = requestAnimationFrame(step);
   };
-  if (n) step();
+  if (n || stars.length || drops.length) step();
 }
 async function l5SendTheme(apply, saveAs) {
   try {
@@ -1717,6 +1804,109 @@ document.querySelectorAll("#l5-media .l5-card").forEach(card => {
   card.ondragleave = () => card.classList.remove("drag");
   card.ondrop = (e) => { e.preventDefault(); card.classList.remove("drag"); if (e.dataTransfer.files.length) l5Upload(card.dataset.drop, [...e.dataTransfer.files]); };
 });
+
+/* --- jaquettes perso : SteamGridDB ou image du PC --- */
+const CV = { app: null, game: null };
+const l5CoverBase = (id) => String(id).slice(0, 39).replace(/[^A-Za-z0-9-]/g, "_");
+function l5CoverFile(id) {
+  const b = l5CoverBase(id), list = L5.data?.files?.jaquettes || [];
+  return (list.find(f => f.name === b + ".jpg") || list.find(f => f.name === b + ".png"))?.name || null;
+}
+function cvMsg(txt, err) { $("cvMsg").textContent = txt || ""; $("cvMsg").classList.toggle("err", !!err); }
+function cvRenderNow() {
+  const f = l5CoverFile(CV.app), box = $("cvNow");
+  box.style.backgroundImage = f ? `url("/api/l5/file?dir=jaquettes&name=${encodeURIComponent(f)}&t=${Date.now()}")` : "";
+  box.textContent = f ? "" : t("cv.auto");
+  $("cvRemove").hidden = !f;
+}
+function cvKeyShown() { const k = !(state.cfg.steamgriddb_key || "").trim(); $("cvKey").hidden = !k; return !k; }
+function cvOpen(app) {
+  CV.app = app; CV.game = null;
+  $("cvTitle").textContent = t("cv.title", { f: l5Name(app) });
+  $("cvQ").value = l5App(app)?.title || l5Name(app);
+  $("cvGames").innerHTML = ""; $("cvGrid").innerHTML = ""; cvMsg("");
+  cvRenderNow();
+  $("dlgCover").showModal();
+  if (cvKeyShown()) cvSearch();
+}
+async function cvSearch() {
+  const q = $("cvQ").value.trim();
+  if (!q || !cvKeyShown()) return;
+  cvMsg(t("cv.searching")); $("cvGames").innerHTML = ""; $("cvGrid").innerHTML = "";
+  try {
+    const r = await api("/api/sgdb/search?q=" + encodeURIComponent(q));
+    if (!r.games.length) return cvMsg(t("cv.nogame"));
+    r.games.forEach((g, i) => {
+      const b = document.createElement("button");
+      b.textContent = g.name + (g.year ? ` (${g.year})` : "");
+      b.onclick = () => cvCovers(g, b);
+      $("cvGames").append(b);
+      if (!i) cvCovers(g, b);
+    });
+  } catch (e) { cvMsg(e.message, true); }
+}
+async function cvCovers(g, btn) {
+  CV.game = g;
+  document.querySelectorAll("#cvGames button").forEach(b => b.classList.toggle("on", b === btn));
+  cvMsg(t("cv.loading")); $("cvGrid").innerHTML = "";
+  try {
+    const r = await api("/api/sgdb/covers?id=" + g.id);
+    if (CV.game !== g) return;
+    if (!r.covers.length) return cvMsg(t("cv.nocover"));
+    cvMsg(t("cv.pick", { n: r.covers.length }));
+    for (const c of r.covers) {
+      const b = document.createElement("button"); b.title = `${c.w}×${c.h}`;
+      const im = document.createElement("img"); im.loading = "lazy"; im.alt = ""; im.referrerPolicy = "no-referrer"; im.src = c.thumb;
+      b.append(im);
+      b.onclick = async () => {
+        cvMsg(t("cv.sending"));
+        try { await api("/api/sgdb/apply", { app: CV.app, url: c.url }); await cvDone(); } catch (e) { cvMsg(e.message, true); }
+      };
+      $("cvGrid").append(b);
+    }
+  } catch (e) { cvMsg(e.message, true); }
+}
+async function cvDone() {
+  await l5Load(true);
+  cvRenderNow();
+  cvMsg(t("cv.sent"));
+}
+$("cvGo").onclick = cvSearch;
+$("cvKeyBtn").onclick = () => { $("cvKey").hidden = !$("cvKey").hidden; if (!$("cvKey").hidden) $("cvKeyIn").focus(); };
+$("cvQ").onkeydown = (e) => { if (e.key === "Enter") cvSearch(); };
+$("cvClose").onclick = () => $("dlgCover").close();
+$("cvKeySave").onclick = async () => {
+  const k = $("cvKeyIn").value.trim();
+  if (!k) return;
+  state.cfg = await api("/api/config", { steamgriddb_key: k });
+  $("cvKeyIn").value = "";
+  if (cvKeyShown()) cvSearch();
+};
+$("cvRemove").onclick = async () => {
+  if (!confirm(t("cv.remove.confirm"))) return;
+  try { await api("/api/l5/cover/remove", { app: CV.app }); await l5Load(true); cvRenderNow(); cvMsg(""); } catch (e) { cvMsg(e.message, true); }
+};
+$("cvPc").onclick = () => $("cvFile").click();
+$("cvFile").onchange = async (e) => {
+  const file = e.target.files[0]; e.target.value = "";
+  if (!file) return;
+  cvMsg(t("cv.sending"));
+  try {
+    /* recadree au format jaquette (2:3) et reduite : envoi rapide, chargement rapide sur la PS5 */
+    const img = await createImageBitmap(file), W = 600, H = 900;
+    let sw = img.width, sh = img.height;
+    if (sw * H > sh * W) sw = sh * W / H; else sh = sw * H / W;
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    cv.getContext("2d").drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, W, H);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.9));
+    const base = l5CoverBase(CV.app);
+    const r = await fetch(`/api/l5/upload?dir=jaquettes&name=${encodeURIComponent(base + ".jpg")}`, { method: "POST", body: blob });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    if ((L5.data?.files?.jaquettes || []).some(f => f.name === base + ".png")) await api("/api/l5/delete", { dir: "jaquettes", name: base + ".png" });
+    await cvDone();
+  } catch (e) { cvMsg(e.message, true); }
+};
 
 /* --- fenêtre --- */
 function l5Tab(tab) {

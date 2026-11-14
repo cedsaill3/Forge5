@@ -60,6 +60,8 @@ depuis le PC (par FTP, payload `ftpsrv`) :
   renommer, masquer, choisir l'affichage (Cover Flow, Grille, Carrousel)
 - **Thème** : galerie de thèmes, nuanciers néon, réglages, **aperçu fidèle** de l'écran de la TV
 - **Fonds et musiques** : envoie tes images et tes musiques
+- **Jaquettes** : bouton 🖼 sur chaque jeu — recherche sur [SteamGridDB](https://www.steamgriddb.com)
+  (clé gratuite à créer sur leur site) ou image du PC, envoyée et affichée tout de suite
 - **Installer / mettre à jour** : télécharge la dernière version de Launcher5 et l'envoie à la PS5
 
 ### 🌐 Multilingue
@@ -99,8 +101,8 @@ langue du navigateur détectée au premier lancement.
    - **GDB** : `wsl gdb-multiarch`
    - le bouton **Vérifier les mises à jour du SDK** confirme que le SDK est bien trouvé
 
-Internet sert seulement à télécharger les payloads, Launcher5 et à vérifier les mises à jour
-du SDK. Forge5 n'écoute que sur ton PC (127.0.0.1) et refuse les requêtes venant d'autres sites.
+Internet sert seulement à télécharger les payloads, Launcher5, les jaquettes SteamGridDB
+et à vérifier les mises à jour du SDK. La clé SteamGridDB reste dans `config.json` sur ton PC. Forge5 n'écoute que sur ton PC (127.0.0.1) et refuse les requêtes venant d'autres sites.
 
 Testé avec une PS5 CFI-1216A (firmware 13.60) et le SDK v0.45.
 
